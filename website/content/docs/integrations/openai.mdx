@@ -1,0 +1,20 @@
+# OpenAI Integration
+
+Connect NeuroBridge to OpenAI clients with profile-aware adaptation wrappers.
+
+## Python usage
+
+```python
+from openai import OpenAI
+from neurobridge.integrations.openai import wrap
+from neurobridge import Profile
+
+client = OpenAI()
+wrapped = wrap(client, profile=Profile.ANXIETY)
+```
+
+## Notes
+
+- Works for standard chat calls
+- Supports streaming adaptation in wrapped mode
+- Keeps API-compatible call signatures where possible

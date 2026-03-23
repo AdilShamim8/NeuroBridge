@@ -1,0 +1,110 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neurobridge"
+version = "0.1.0"
+description = "Cognitive accessibility middleware for AI outputs"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "NeuroBridge Contributors" }
+]
+keywords = ["accessibility", "llm", "middleware", "neurodiversity", "nlp"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "openai>=1.0.0,<2.0.0",
+  "anthropic>=0.18.0,<1.0.0",
+  "pydantic>=2.0.0,<3.0.0",
+  "langchain>=0.1.0,<0.4.0",
+  "nltk>=3.8,<4.0",
+  "tiktoken>=0.5.0,<1.0.0",
+  "typer>=0.12.0,<1.0.0",
+  "rich>=13.7.0,<14.0.0",
+]
+
+[project.scripts]
+neurobridge = "neurobridge.cli:main"
+
+[project.optional-dependencies]
+openai = ["openai>=1.0.0"]
+anthropic = ["anthropic>=0.18.0"]
+langchain = ["langchain>=0.1.0"]
+redis = ["redis>=5.0.0"]
+server = [
+  "fastapi>=0.100.0,<1.0.0",
+  "uvicorn>=0.23.0,<1.0.0",
+]
+ml = [
+  "scikit-learn>=1.3.0,<2.0.0",
+  "joblib>=1.4.0,<2.0.0",
+]
+docs = [
+  "mkdocs>=1.6.0",
+  "mkdocs-material>=9.5.0",
+  "mkdocstrings[python]>=0.24.0",
+]
+dev = [
+  "pytest>=7.4.0",
+  "pytest-asyncio>=0.23.0",
+  "pytest-cov>=5.0.0",
+  "hypothesis>=6.0.0",
+  "vcrpy>=6.0.0",
+  "mutmut>=2.0.0",
+  "black>=24.0.0",
+  "ruff>=0.4.0",
+  "mypy>=1.8.0",
+  "scikit-learn>=1.3.0,<2.0.0",
+  "joblib>=1.4.0,<2.0.0",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["neurobridge*"]
+
+[tool.setuptools.package-data]
+neurobridge = ["data/*.json", "ml/*.pkl", "ml/data/synthetic/*.json"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+strict_optional = true
+exclude = "(^\\.venv/|^website/|^packages/)"
+
+[[tool.mypy.overrides]]
+module = [
+  "nltk.*",
+  "joblib",
+  "sklearn.*",
+]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["neurobridge.integrations.langchain"]
+ignore_errors = true

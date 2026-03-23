@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NeuroBridge Browser CDN Example</title>
+  </head>
+  <body>
+    <h1>NeuroBridge Browser CDN Example</h1>
+    <textarea id="input" rows="6" cols="70">This is critical and must be done ASAP.</textarea>
+    <button id="adapt">Adapt</button>
+    <pre id="output"></pre>
+
+    <script src="../dist/browser/neurobridge.global.js"></script>
+    <script>
+      const bridge = new window.NeuroBridge();
+      bridge.setProfile("ANXIETY");
+
+      const input = document.getElementById("input");
+      const output = document.getElementById("output");
+      const button = document.getElementById("adapt");
+
+      button.addEventListener("click", () => {
+        const result = bridge.adaptSync(input.value);
+        output.textContent = result.adaptedText;
+      });
+    </script>
+  </body>
+</html>

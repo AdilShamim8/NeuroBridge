@@ -1,0 +1,16 @@
+interactions:
+- request:
+    body: ''
+    headers: {}
+    method: GET
+    uri: https://api.anthropic.mock/v1/messages
+  response:
+    body:
+      string: '{"content": [{"text": "URGENT! This must be fixed immediately."}]}'
+    headers:
+      Content-Type:
+      - application/json
+    status:
+      code: 200
+      message: OK
+version: 1

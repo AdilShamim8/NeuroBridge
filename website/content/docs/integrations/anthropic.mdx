@@ -1,0 +1,15 @@
+# Anthropic Integration
+
+Use the Anthropic wrapper to adapt Claude responses to selected profiles.
+
+## Example
+
+```python
+from anthropic import Anthropic
+from neurobridge.integrations.anthropic import wrap
+
+client = Anthropic()
+wrapped = wrap(client)
+```
+
+The wrapper can run profile transforms before returning final response content.

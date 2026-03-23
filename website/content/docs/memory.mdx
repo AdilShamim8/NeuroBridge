@@ -1,0 +1,29 @@
+# Memory
+
+NeuroBridge supports multiple memory backends for profile persistence and feedback learning.
+
+## Backends
+
+- SQLite: persistent local default
+- Redis: distributed cache/store with graceful fallback
+- Custom: implement `BaseMemoryStore`
+
+## SQLite
+
+Good for local apps and single-instance deployments.
+
+## Redis
+
+Recommended for multi-instance APIs and low-latency reads.
+
+## Custom backend
+
+Implement the required methods:
+
+- `save_profile`
+- `load_profile`
+- `save_feedback`
+- `get_feedback`
+- `increment_interaction`
+- `get_interaction_count`
+- `clear_user_data`

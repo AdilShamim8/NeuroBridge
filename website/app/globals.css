@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --focus-ring: #7f77dd;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #14131f;
+  background: linear-gradient(180deg, #f8f8ff 0%, #eefcf7 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+p,
+li {
+  max-width: 65ch;
+}
+
+:where(a, button, input, textarea, select, [role="button"], [role="link"]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.glass {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+}
+
+.badge-pill {
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, rgba(127, 119, 221, 0.14) 0%, rgba(127, 119, 221, 0.32) 45%, rgba(127, 119, 221, 0.14) 100%);
+  background-size: 200% 100%;
+  animation: nb-shimmer 1.2s linear infinite;
+}
+
+@keyframes nb-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :root {
+    --focus-ring: Highlight;
+  }
+
+  * {
+    border-color: CanvasText !important;
+  }
+
+  svg {
+    fill: currentColor;
+    stroke: currentColor;
+  }
+}

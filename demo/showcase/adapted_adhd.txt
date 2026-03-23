@@ -1,0 +1,9 @@
+Summary: Build the API in clear phases and protect stability.
+
+1) Model first: Define entities, relationships, and API versioning.
+2) Core routes: Add handlers with input validation and auth middleware.
+3) Reliability: Return structured errors and set pagination defaults.
+4) Safety: Use transactions and migration checks before release.
+5) Operations: Add logs, metrics, staged rollout, and rollback support.
+
+Bottom line: Ship a stable v1 first, then iterate without breaking existing clients.

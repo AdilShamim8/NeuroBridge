@@ -1,0 +1,60 @@
+# Getting Started
+
+NeuroBridge adapts AI responses to reduce cognitive friction and improve comprehension across different communication needs.
+
+## Installation
+
+```bash
+pip install neurobridge
+```
+
+Optional extras:
+
+```bash
+pip install "neurobridge[openai,anthropic,langchain,server,redis]"
+```
+
+## Quickstart
+
+```python
+from neurobridge import NeuroBridge, Profile
+print(NeuroBridge().set_profile(Profile.ADHD))
+```
+
+A practical two-line integration:
+
+```python
+bridge = NeuroBridge()
+bridge.set_profile(Profile.ANXIETY)
+```
+
+## First adaptation
+
+```python
+from neurobridge import NeuroBridge, Profile
+
+bridge = NeuroBridge()
+bridge.set_profile(Profile.DYSLEXIA)
+
+source = "This explanation includes several clauses, caveats, and dense sequencing in a single paragraph."
+result = bridge.adapt(source)
+print(result)
+```
+
+Expected adaptation style:
+
+- Shorter sentence segments
+- Clearer structure
+- Lower reading load
+
+<Callout type="tip" title="Choosing a profile">
+	Start with the profile that feels closest to your day-to-day reading friction, then fine-tune with feedback loops.
+	See the full guide in [Profiles](/docs/profiles).
+</Callout>
+
+## Next steps
+
+- Configure runtime behavior in [Configuration](/docs/configuration)
+- Explore storage backends in [Memory](/docs/memory)
+- Integrate providers in [Integrations](/docs/integrations/openai)
+- Deploy API mode in [REST API](/docs/integrations/rest-api)

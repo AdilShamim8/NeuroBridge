@@ -1,0 +1,28 @@
+# Custom Profiles
+
+You can define custom profiles when built-in presets are close but not perfect.
+
+## Create a profile
+
+```python
+from neurobridge import CustomProfile, NeuroBridge
+
+custom = CustomProfile(
+    chunk_size=2,
+    tone="calm",
+    ambiguity_resolution="explicit",
+    number_format="contextual",
+    leading_style="summary_first",
+    reading_level=6,
+    max_sentence_words=12,
+)
+
+bridge = NeuroBridge()
+bridge.set_profile(custom)
+```
+
+## Tuning tips
+
+- Start with one change at a time
+- Collect user edits via feedback API
+- Re-run with benchmark prompts before rollout

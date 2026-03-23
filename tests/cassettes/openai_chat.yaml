@@ -1,0 +1,16 @@
+interactions:
+- request:
+    body: ''
+    headers: {}
+    method: GET
+    uri: https://api.openai.mock/v1/chat/completions
+  response:
+    body:
+      string: '{"choices": [{"message": {"content": "This is critical and you must complete this ASAP."}}]}'
+    headers:
+      Content-Type:
+      - application/json
+    status:
+      code: 200
+      message: OK
+version: 1

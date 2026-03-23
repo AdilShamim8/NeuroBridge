@@ -1,0 +1,20 @@
+# Streaming
+
+Use streaming mode when you want adapted chunks while generation is still in progress.
+
+## Example
+
+```python
+import asyncio
+from neurobridge import NeuroBridge
+
+bridge = NeuroBridge()
+
+async def run():
+    async for part in bridge.chat_stream("Explain transformers for beginners."):
+        print(part)
+
+asyncio.run(run())
+```
+
+Streaming emits adapted chunks at sentence boundaries and ends with a final response object.

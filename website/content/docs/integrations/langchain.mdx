@@ -1,0 +1,15 @@
+# LangChain Integration
+
+Use NeuroBridge as a post-processing layer in LangChain pipelines.
+
+## Pattern
+
+1. Get chain output
+2. Pass text through NeuroBridge
+3. Return adapted content to user
+
+```python
+from neurobridge.integrations.langchain import NeuroBridgeOutputParser
+```
+
+LangChain callbacks are supported for adaptation lifecycle events.

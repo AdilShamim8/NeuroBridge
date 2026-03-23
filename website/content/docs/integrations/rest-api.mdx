@@ -1,0 +1,15 @@
+# REST API
+
+NeuroBridge server mode exposes adaptation and profile routes.
+
+<ApiEndpoint method="POST" path="/api/v1/adapt" description="Adapt text to selected profile." />
+<ApiEndpoint method="POST" path="/api/v1/adapt/stream" description="Server-sent streaming adaptation." />
+<ApiEndpoint method="GET" path="/api/v1/health" description="Health and readiness check." />
+
+## cURL example
+
+```bash
+curl -X POST http://localhost:8000/api/v1/adapt \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Urgent: fix now","profile":"anxiety"}'
+```

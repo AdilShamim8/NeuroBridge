@@ -1,0 +1,18 @@
+# Quiz
+
+ProfileQuiz maps user preferences to a recommended adaptation profile.
+
+## Python API
+
+```python
+from neurobridge import ProfileQuiz
+
+quiz = ProfileQuiz()
+result = quiz.evaluate([0, 1, 2, 3] * 4)
+print(result.primary_profile)
+```
+
+## REST API
+
+<ApiEndpoint method="GET" path="/api/v1/quiz/questions" description="Fetch quiz questions." />
+<ApiEndpoint method="POST" path="/api/v1/quiz/submit" description="Submit answers and receive profile result." />

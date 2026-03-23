@@ -1,0 +1,27 @@
+# Configuration
+
+Use `Config` to control backend behavior, output formats, and adaptation defaults.
+
+## Key options
+
+- `memory_backend`: `sqlite | redis | none`
+- `memory_path`: path to SQLite DB
+- `redis_url`: connection URI for Redis backend
+- `output_format`: markdown, plain, html, json, tts
+- `max_chunk_words`: sentence grouping threshold
+- `debug`: rich diagnostic output
+- `auto_adjust_after`: interactions before feedback-based auto tuning
+
+## Example
+
+```python
+from neurobridge import Config, NeuroBridge
+
+config = Config(
+    memory_backend="redis",
+    redis_url="redis://localhost:6379/0",
+    output_format="markdown",
+    debug=True,
+)
+bridge = NeuroBridge(config=config)
+```

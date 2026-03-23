@@ -1,0 +1,133 @@
+# Profiles
+
+NeuroBridge includes five built-in adaptation profiles. Profiles are not diagnoses. They are communication presets designed to reduce specific friction patterns.
+
+## Comparison table
+
+| Profile | Primary goal | Typical transforms | Best for |
+|---|---|---|---|
+| ADHD | Reduce attention drift | Priority reordering, chunking, summary-first | Long multi-part responses |
+| Autism | Reduce ambiguity | Idiom removal, explicit phrasing | Literal clarity and predictability |
+| Dyslexia | Improve readability | Sentence simplification, spacing, shorter lines | Dense text and scan fatigue |
+| Anxiety | Lower stress signals | Urgency filtering, calmer tone | Pressure-heavy messaging |
+| Dyscalculia | Improve numeric comprehension | Contextual number framing | Percentages, scale, and magnitudes |
+
+## ADHD
+
+<ProfileBadge profile="adhd" />
+
+### Who it is designed for
+People who lose context when key points are buried in dense text or deeply nested explanations.
+
+### What it changes
+- Moves conclusions and priorities to the top
+- Chunks long responses into digestible units
+- Preserves detail while reducing scanning cost
+
+### Before/After example
+<BeforeAfter
+	before={`The report contains multiple sections and detailed caveats before the main recommendation is introduced near the end, so the practical next step is easy to miss in the first read-through.`}
+	after={`Bottom line: start with the migration path below. Then review caveats in short sections. This keeps the next action visible while preserving implementation detail.`}
+/>
+
+### When to use / when not to use
+Use for complex planning and procedural guidance. Avoid when strict legal or contractual ordering must remain untouched.
+
+### References
+- CHADD: https://chadd.org
+
+## Autism
+
+<ProfileBadge profile="autism" />
+
+### Who it is designed for
+People who prefer direct language and find figurative, vague, or implied wording difficult to parse.
+
+### What it changes
+- Replaces idioms with literal alternatives
+- Removes vague qualifiers where possible
+- Keeps terminology stable and explicit
+
+### Before/After example
+<BeforeAfter
+	before={`We should move the needle quickly, circle back later, and keep an eye on edge cases that might pop up.`}
+	after={`We should improve the metric this week, review progress tomorrow, and track specific edge cases in a checklist.`}
+/>
+
+### When to use / when not to use
+Use for operational instructions and technical explanations. Avoid if conversational style and idiomatic tone are explicitly required.
+
+### References
+- National Autistic Society: https://www.autism.org.uk
+
+## Dyslexia
+
+<ProfileBadge profile="dyslexia" />
+
+### Who it is designed for
+People who experience fatigue or reduced comprehension with dense sentence structure and low visual separation.
+
+### What it changes
+- Breaks long sentences into shorter statements
+- Improves line-level readability and pacing
+- Reduces unnecessary linguistic complexity
+
+### Before/After example
+<BeforeAfter
+	before={`This architecture summary includes multiple dependency interactions, parallel workflows, and conditional branches that are all described in one continuous paragraph.`}
+	after={`This architecture has three parts. Dependencies are listed first. Workflows are shown in short steps. Conditional branches are separated clearly.`}
+/>
+
+### When to use / when not to use
+Use for documentation and long-form responses. Avoid when original prose style must be preserved exactly.
+
+### References
+- International Dyslexia Association: https://dyslexiaida.org
+
+## Anxiety
+
+<ProfileBadge profile="anxiety" />
+
+### Who it is designed for
+People who are negatively impacted by urgency-heavy or catastrophic wording in routine communication.
+
+### What it changes
+- Softens urgent language without removing intent
+- Reduces alarm words and pressure framing
+- Keeps action guidance calm and clear
+
+### Before/After example
+<BeforeAfter
+	before={`This is urgent and must be fixed immediately to avoid failure. Respond as soon as possible.`}
+	after={`This is important and worth reviewing soon. Please address it when ready so the release stays on schedule.`}
+/>
+
+### When to use / when not to use
+Use for notifications, support, and task guidance. Avoid in genuine safety-critical incidents where explicit urgency is required.
+
+### References
+- Anxiety & Depression Association of America: https://adaa.org
+
+## Dyscalculia
+
+<ProfileBadge profile="dyscalculia" />
+
+### Who it is designed for
+People who find abstract percentages, very large values, or scale comparisons difficult to interpret quickly.
+
+### What it changes
+- Adds practical context to percentages
+- Reframes large values with relatable anchors
+- Preserves numeric precision while improving interpretation
+
+### Before/After example
+<BeforeAfter
+	before={`Engagement improved by 37% and monthly impact is $420,000, with a forecast variance of 0.08.`}
+	after={`Engagement improved by 37% (about 2 in 5). Monthly impact is $420,000 (roughly house-deposit scale). Forecast variance is 0.08 (about 8 in 100).`}
+/>
+
+### When to use / when not to use
+Use for analytics, reports, and forecasts. Avoid when strict machine-readable numeric output must remain unchanged.
+
+### References
+- British Dyslexia Association: https://www.bdadyslexia.org.uk/dyscalculia

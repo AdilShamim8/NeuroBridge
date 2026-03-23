@@ -1,0 +1,2 @@
+neurobridge
+gradio>=4.0

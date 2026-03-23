@@ -1,0 +1,23 @@
+site_name: NeuroBridge
+site_description: Cognitive accessibility middleware for AI
+site_url: https://neurobridge.dev
+theme:
+  name: material
+  features:
+    - content.code.copy
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths:
+            - .
+nav:
+  - Getting Started: docs/getting-started.md
+  - Profiles: docs/profiles.md
+  - Integrations: docs/integrations.md
+  - API Reference: docs/api-reference.md
+markdown_extensions:
+  - admonition
+  - codehilite
+  - pymdownx.superfences

@@ -1,0 +1,13 @@
+# HuggingFace Integration
+
+NeuroBridge can wrap HuggingFace outputs for profile-specific adaptation.
+
+## Example
+
+```python
+from neurobridge.integrations.huggingface import wrap_pipeline
+
+adapted = wrap_pipeline(pipeline_obj)
+```
+
+Use this when building local/offline inference flows with transformer models.

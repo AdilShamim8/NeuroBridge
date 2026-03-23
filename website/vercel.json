@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/og/route.ts": {
+      "runtime": "edge"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/stats",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
