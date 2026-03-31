@@ -71,7 +71,7 @@ jobs:
           python -m zipfile -l dist/*.whl
 
       - name: Upload dist artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dist-files
           path: dist/
