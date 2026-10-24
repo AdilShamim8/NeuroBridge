@@ -116,11 +116,14 @@ class _MockOpenAICompletions:
     def create(self, *args, **kwargs):
         self.calls.append(kwargs)
         if kwargs.get("stream") is True:
-            words = self.MODEL_TEXT.split(" ")
-            for index in range(0, len(words), 2):
-                yield _FakeChunk(" ".join(words[index : index + 2]) + " ")
-        else:
-            return _FakeResponse(self.MODEL_TEXT)
+            return self._stream_fragments()
+        return _FakeResponse(self.MODEL_TEXT)
+
+    @staticmethod
+    def _stream_fragments():
+        words = _MockOpenAICompletions.MODEL_TEXT.split(" ")
+        for index in range(0, len(words), 2):
+            yield _FakeChunk(" ".join(words[index : index + 2]) + " ")
 
 
 class _MockOpenAIChat:
