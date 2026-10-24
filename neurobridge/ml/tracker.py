@@ -102,5 +102,7 @@ class InteractionTracker:
         data = getattr(store, "_interaction_cache", None)
         if not isinstance(data, dict):
             data = {}
-            store._interaction_cache = data
+            # setattr is required: the attribute is attached dynamically and does not
+            # exist on BaseMemoryStore (mypy attr-defined). B010 is silenced on purpose.
+            setattr(store, "_interaction_cache", data)  # noqa: B010
         data[key] = list(events)
