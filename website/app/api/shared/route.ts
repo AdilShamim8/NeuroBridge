@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
   const adapted = body.adapted.slice(0, 3000);
   const profile = (body.profile || "adhd").toLowerCase();
 
-  const hash = hashPayload(`${input}|${profile}|${adapted}|${Date.now()}`);
+  const hash = hashPayload(`${input}|${profile}|${adapted}|${Date.now()}`, 64);
   const records = await readJsonFile<Record<string, SharedItem>>("shared.json", {});
   records[hash] = {
     hash,
