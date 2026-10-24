@@ -7,10 +7,9 @@
 ### Cognitive Accessibility Middleware for AI — The Adaptation Layer the Web Has Been Missing
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.9+](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://www.python.org/)
-[![PyPI version](https://img.shields.io/badge/pypi-v0.1.0-orange.svg)](https://pypi.org/project/neurobridge/)
-[![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen.svg)](docs/release/day29-final-polish-report.md)
-[![GitHub Stars](https://img.shields.io/github/stars/yourusername/neurobridge?style=social)](#)
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Coverage gate: 85%](https://img.shields.io/badge/coverage%20gate-85%25-brightgreen.svg)](TESTING.md)
+[![GitHub Stars](https://img.shields.io/github/stars/AdilShamim8/NeuroBridge?style=social)](https://github.com/AdilShamim8/NeuroBridge/stargazers)
 [![Discord](https://img.shields.io/discord/placeholder?color=7289DA&label=Discord&logo=discord)](https://discord.gg/neurobridge)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
@@ -20,7 +19,7 @@ NeuroBridge is the open-source middleware that sits between any LLM and any appl
 
 [**Quickstart**](#-quickstart) · [**Docs**](https://neurobridge.dev/docs) · [**Profiles**](#-cognitive-profiles) · [**Integrations**](#-integrations) · [**Roadmap**](#-roadmap) · [**Community**](#-community)
 
-**Live Demo**: [HuggingFace Space](https://huggingface.co/spaces/yourusername/neurobridge-demo) · [Colab Notebook](https://colab.research.google.com/github/yourusername/neurobridge/blob/main/notebooks/NeuroBridge_Quickstart.ipynb)
+**Live Demo**: [HuggingFace Space](#deployment-status-not-yet-deployed) · [Colab Notebook](notebooks/NeuroBridge_Quickstart.ipynb)
 
 **Release Validation**: See [docs/release/day29-final-polish-report.md](docs/release/day29-final-polish-report.md) and [docs/release/day30-launch-execution.md](docs/release/day30-launch-execution.md) for the latest quality and launch checks.
 
@@ -34,7 +33,7 @@ NeuroBridge is the open-source middleware that sits between any LLM and any appl
 
 ## 🌍 The Problem
 
-Over **1.5 billion people worldwide** are neurodivergent — living with ADHD, autism, dyslexia, dyscalculia, anxiety disorders, or other cognitive differences. Yet every AI system in existence today produces the exact same output format for all of them: dense, linear, neurotypical text walls.
+Somewhere between **1.5 and 2.9 billion people worldwide** are neurodivergent — living with ADHD, autism, dyslexia, dyscalculia, anxiety disorders, or other cognitive differences (estimates vary by study, and conditions overlap; the table below shows per-condition prevalence). Yet most AI systems produce the exact same output format for all of them: dense, linear, neurotypical text walls.
 
 This is not a minor UX inconvenience. It is a **fundamental accessibility failure**.
 
@@ -46,7 +45,7 @@ This is not a minor UX inconvenience. It is a **fundamental accessibility failur
 | Anxiety Disorders | ~4% (300M people) | Urgent or negative framing spikes distress |
 | Dyscalculia | ~6% (460M people) | Raw numbers without context overwhelm processing |
 
-The **EU Accessibility Act** (enforced June 2025) and the **Americans with Disabilities Act** now legally require digital AI products to meet cognitive accessibility standards. Companies are scrambling — and there is no open-source solution.
+Accessibility regulation is tightening: the **EU Accessibility Act** extends obligations to more digital products from June 2025, and the **ADA** has increasingly been applied to digital experiences. Cognitive accessibility is part of that conversation, and open-source tooling for it is scarce.
 
 **NeuroBridge is that solution.**
 
@@ -76,35 +75,61 @@ Same LLM. Same query. Completely different — and completely right — output f
 ### Installation
 
 ```bash
-pip install neurobridge
+pip install git+https://github.com/AdilShamim8/NeuroBridge.git
 ```
 
-### 2-Line Integration
+### Quickstart: adapt text directly
 
 ```python
 from neurobridge import NeuroBridge, Profile
 
-# Wrap your existing client — nothing else changes
-nb = NeuroBridge(llm_client=openai_client)
+nb = NeuroBridge()
 nb.set_profile(Profile.ADHD)
 
 response = nb.chat("Explain how machine learning works")
-# ✅ Returns chunked, prioritised, attention-optimised output automatically
 print(response.adapted_text)
 ```
 
-### With Profile Auto-Detection
+### Drop-in for the OpenAI SDK
 
 ```python
-from neurobridge import NeuroBridge, ProfileQuiz
+from openai import OpenAI
+from neurobridge import Profile
+from neurobridge.integrations import wrap_openai
 
-nb = NeuroBridge(llm_client=your_client)
+client = wrap_openai(OpenAI(), profile=Profile.ADHD)
 
-# Run a 90-second adaptive quiz to detect cognitive profile
-profile = ProfileQuiz.run(user_id="user_123")
+# Every chat completion (streaming included) now goes to the real API
+# first and comes back adapted.
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[{"role": "user", "content": "Explain how machine learning works"}],
+)
+```
 
-nb.set_profile(profile)
-# Now all outputs are adapted automatically
+> `NeuroBridge(llm_client=...)` expects a client exposing a callable
+> `chat(message=..., **kwargs)` interface (or `chat_stream` for streaming);
+> the OpenAI SDK's `client.chat` is a namespace, not callable - use
+> `wrap_openai` for that.
+
+### Choosing a profile with the quiz
+
+`ProfileQuiz` is interactive (it prompts on the terminal), so run it from a
+command line rather than a server or notebook:
+
+```bash
+neurobridge quiz            # interactive assessment, prints the recommendation
+neurobridge quiz --save --user-id user_123
+```
+
+Or programmatically when you already have answers:
+
+```python
+from neurobridge.core.quiz import QuizEngine
+
+engine = QuizEngine()
+result = engine.from_answers_json('{"answers": {"q1": 0, "q2": 1}}')
+# result.primary_profile, result.recommended_config
 ```
 
 ### JavaScript/TypeScript SDK (Preview)
@@ -202,46 +227,34 @@ nb.set_profile(my_profile)
 
 NeuroBridge is designed to be a **zero-friction drop-in** for every major AI ecosystem.
 
-| Integration | Status | Install |
+| Integration | Status | How to use |
 |---|---|---|
-| OpenAI SDK | ✅ Stable | `pip install neurobridge[openai]` |
-| Anthropic SDK | ✅ Stable | `pip install neurobridge[anthropic]` |
-| LangChain | ✅ Stable | `pip install neurobridge[langchain]` |
-| Hugging Face Transformers | ✅ Stable | `pip install neurobridge[huggingface]` |
-| Mistral SDK | 🔄 Beta | `pip install neurobridge[mistral]` |
-| LlamaIndex | 🔄 Beta | `pip install neurobridge[llamaindex]` |
-| Ollama (local LLMs) | 🔄 Beta | `pip install neurobridge[ollama]` |
-| MindsDB | 📅 Planned | Coming Q3 2025 |
-| REST API (any LLM) | ✅ Stable | Built-in, no extra install |
+| OpenAI SDK | Stable | `wrap()` from `neurobridge.integrations` |
+| Anthropic SDK | Stable | `wrap()` from `neurobridge.integrations` |
+| LangChain | Stable | output parsers, callback handlers, chains, retrievers |
+| Hugging Face | Stable | pipeline and transformers adapters |
+| FastAPI server | Stable | `pip install -e ".[server]"`, then `neurobridge serve` |
+| Redis memory | Stable | `pip install -e ".[redis]"` |
 
 ### LangChain Example
 
 ```python
-from langchain.chat_models import ChatOpenAI
-from neurobridge.integrations.langchain import NeuroBridgeOutputParser
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI
+from neurobridge.integrations import NeuroBridgeOutputParser
 
 llm = ChatOpenAI()
 parser = NeuroBridgeOutputParser(profile=Profile.ADHD)
+prompt = PromptTemplate.from_template("Explain {topic} simply.")
 
 chain = prompt | llm | parser
 # All chain outputs now auto-adapt
 ```
 
-### REST API Wrapper (Universal)
+The langchain integration requires `langchain-core` (installed with the
+`langchain` dependency); `langchain_openai` is the current package for the
+OpenAI chat model (`langchain.chat_models` was removed in langchain 0.3).
 
-```python
-from neurobridge.integrations.rest import RestAdapter
-
-adapter = RestAdapter(
-    endpoint="https://your-llm-api.com/v1/chat",
-    profile=Profile.AUTISM,
-    headers={"Authorization": "Bearer YOUR_KEY"}
-)
-
-response = adapter.chat("What is the stock market?")
-```
-
----
 
 ## 🏗 Architecture
 
@@ -274,9 +287,9 @@ response = adapter.chat("What is the stock market?")
 
 ### Core Modules
 
-**`neurobridge.core.profile_engine`** — Manages cognitive profiles. Includes the `ProfileQuiz` (15-question adaptive assessment), profile persistence, and a REST API for profile management across sessions.
+**`neurobridge.core.profile`** — Manages cognitive profiles. Includes the `ProfileQuiz` (15-question adaptive assessment), profile persistence, and a REST API for profile management across sessions.
 
-**`neurobridge.core.transform`** — The heart of NeuroBridge. Contains 12 transformation modules: `Chunker`, `ToneRewriter`, `AmbiguityResolver`, `NumberContextualiser`, `SentenceSimplifier`, `ActiveVoiceConverter`, `PriorityReorderer`, `MetaphorLiteraliser`, `UrgencyFilter`, `StructureBuilder`, `ProgressIndicator`, `ReadingLevelAdapter`.
+**`neurobridge.core.transform`** - The heart of NeuroBridge. Contains 6 transformation modules run in order: `Chunker`, `SentenceSimplifier`, `UrgencyFilter`, `ToneRewriter`, `NumberContextualiser`, and `PriorityReorderer`.
 
 **`neurobridge.core.memory`** — Learns user preferences over time. When a user edits an adapted output ("make this shorter"), NeuroBridge records the delta and updates their profile. Supports SQLite (default), Redis, and custom backends.
 
@@ -286,16 +299,24 @@ response = adapter.chat("What is the stock market?")
 
 ## 📊 Performance
 
-NeuroBridge adds minimal overhead to your LLM calls.
+NeuroBridge's transform pipeline is pure CPU work over text and adds
+sub-millisecond-per-sentence overhead to an LLM call; total overhead is
+dominated by the LLM itself.
 
-| Operation | Avg Latency | p99 Latency |
-|---|---|---|
+Reproduce the numbers on your own hardware with the committed benchmark
+scripts rather than trusting marketing tables:
+
+```bash
+python benchmarks/benchmark_pipeline.py   # end-to-end pipeline latency
+python benchmarks/benchmark_transform.py  # transform throughput
+python benchmarks/benchmark_memory.py     # memory backend latency
+```
+
 | Profile load | 0.3ms | 1.1ms |
 | Transform pipeline | 8ms | 24ms |
 | Format adapter | 1.2ms | 4ms |
 | **Total overhead** | **~10ms** | **~30ms** |
 
-Benchmarked on a 2023 MacBook Pro M2, 500-word output, ADHD profile.
 
 ---
 
@@ -369,32 +390,25 @@ Docs UI: `http://127.0.0.1:8080/docs`
 ## 🧪 Testing
 
 ```bash
-git clone https://github.com/yourusername/neurobridge
-cd neurobridge
-pip install -e ".[dev]"
+git clone https://github.com/AdilShamim8/NeuroBridge.git
+git clone https://github.com/AdilShamim8/NeuroBridge.git
+cd NeuroBridge
+pip install -e ".[dev]"      # includes the full server test stack
 
-# Run full test suite
-pytest tests/ -v
+# Run the full test suite
+pytest tests/ -q
 
-# Run strict release gate (coverage >= 90%)
-pytest --cov=neurobridge --cov-report=term --cov-fail-under=90 -q
+# Run with coverage (CI gate is 85%)
+pytest --cov=neurobridge --cov-report=term --cov-fail-under=85 -q
 
-# Static checks
+# Static checks (the same set CI runs)
 mypy neurobridge/
-ruff check neurobridge/ tests/
-black --check neurobridge/ tests/
-bandit -r neurobridge/
+ruff check .
+black --check .
 
-# Package metadata checks
-python -m twine check dist/*
+# JavaScript SDK
+cd packages/neurobridge-js && npm ci && npm test
 ```
-
-### Latest Verified Result (2026-03-23)
-
-- 160 tests passed.
-- Coverage gate passed at 90.00%.
-- mypy, ruff, black, and bandit passed.
-- Twine package checks passed for wheel and sdist.
 
 ---
 
@@ -432,7 +446,7 @@ NeuroBridge is built for and with neurodivergent communities. Contributions of a
 
 ### First-Time Contributors
 
-Look for issues tagged [`good first issue`](https://github.com/yourusername/neurobridge/issues?q=label%3A%22good+first+issue%22) and [`help wanted`](https://github.com/yourusername/neurobridge/issues?q=label%3A%22help+wanted%22).
+Look for issues tagged [`good first issue`](https://github.com/AdilShamim8/NeuroBridge/issues?q=label%3A%22good+first+issue%22) and [`help wanted`](https://github.com/AdilShamim8/NeuroBridge/issues?q=label%3A%22help+wanted%22).
 
 ### Code of Conduct
 
