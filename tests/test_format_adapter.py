@@ -29,7 +29,9 @@ def test_markdown_adapter_outputs_clean_markdown() -> None:
     out = adapter.format(text, profile)
     assert "## Header" in out
     assert "```text" in out
-    assert "aria-label" in out
+    # Alt text is kept meaningful without faking an HTML attribute inside Markdown.
+    assert "![" in out
+    assert "aria-label" not in out
 
 
 def test_html_adapter_contains_semantic_and_aria_labels() -> None:
@@ -90,3 +92,39 @@ def test_tts_adapter_expands_acronyms_and_numbers() -> None:
     assert "forty-two" in lowered
     assert "3.2 million dollars" in lowered
     assert "percent" in lowered
+
+
+def test_markdown_adapter_does_not_corrupt_closing_fences() -> None:
+    """Regression: '```\\n' -> '```text\\n' rewrote closing fences too, turning
+    them into opening fences with an info string (invalid CommonMark) and
+    swallowing everything after the code block."""
+    adapter = MarkdownAdapter()
+    text = "Intro paragraph.\n\n```python\nprint(1)\n```\n\nAfter the code block."
+    out = adapter.format(text, get_profile_config(Profile.DYSLEXIA))
+
+    assert out.count("```") == 2
+    assert "```text\nprint(1)" not in out
+    assert "```python" in out
+    # The closing fence must stay bare.
+    lines = out.splitlines()
+    closing = [ln for ln in lines if ln.strip() == "```"]
+    assert len(closing) == 1
+    assert "After the code block." in out
+
+
+def test_markdown_adapter_adds_hint_to_unlabeled_opening_fence() -> None:
+    adapter = MarkdownAdapter()
+    text = "Intro.\n\n```\nplain code\n```\n\nOutro."
+    out = adapter.format(text, get_profile_config(Profile.ADHD))
+    assert "```text" in out
+
+
+def test_markdown_adapter_no_fake_aria_label_in_alt() -> None:
+    """Regression: the adapter appended '(aria-label: ...)' to Markdown alt text,
+    which is an HTML attribute and meaningless inside Markdown - screen readers
+    just read the duplicated text aloud."""
+    adapter = MarkdownAdapter()
+    text = "See the diagram.\n\n![](diagram.png)\n\nDone."
+    out = adapter.format(text, get_profile_config(Profile.ADHD))
+    assert "aria-label" not in out
+    assert "![Image description](diagram.png)" in out

@@ -57,15 +57,26 @@ class MarkdownAdapter(BaseFormatAdapter):
 
         content = "\n".join(normalized)
 
-        # Ensure code fences include a language hint.
-        content = re.sub(r"```\n", "```text\n", content)
+        # Ensure code fences include a language hint. Track open/close state so
+        # closing fences are left alone: a closing fence carrying an info string
+        # is invalid per CommonMark and swallows the rest of the document into
+        # the code block.
+        fenced = False
+        hinted: list[str] = []
+        for line in content.split("\n"):
+            if line.strip().startswith("```"):
+                if not fenced and line.strip() == "```":
+                    line = "```text"
+                fenced = not fenced
+            hinted.append(line)
+        content = "\n".join(hinted)
 
-        # Ensure images include a basic accessible alt hint.
+        # Ensure images carry a non-empty alt text. (aria-label is an HTML
+        # attribute and does nothing inside Markdown alt text, so it is not
+        # faked here.)
         def image_repl(match: re.Match[str]) -> str:
             alt = match.group(1).strip() or "Image description"
             src = match.group(2)
-            if "aria-label" not in alt.lower():
-                alt = f"{alt} (aria-label: {alt})"
             return f"![{alt}]({src})"
 
         content = _IMAGE_RE.sub(image_repl, content)
