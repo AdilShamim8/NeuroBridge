@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       >
         <div style={{ fontSize: 34, color: "#5b5c70", marginBottom: 14 }}>NeuroBridge</div>
         <div style={{ fontSize: 72, fontWeight: 800, marginBottom: 12 }}>AI That Speaks Your Language</div>
-        <div style={{ fontSize: 38, color: "#7F77DD" }}>Profile: {profile}</div>
+        <div style={{ fontSize: 38, color: "#7169C4" }}>{`Profile: ${profile}`}</div>
       </div>
     ),
     {
