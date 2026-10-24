@@ -22,6 +22,10 @@ class AdaptRequest(BaseModel):
     @field_validator("text")
     @classmethod
     def _validate_text(cls, value: str) -> str:
+        # Whitespace-only text would otherwise pass min_length and later raise
+        # inside bridge.chat, surfacing as an opaque 500 instead of a 422.
+        if not value.strip():
+            raise ValueError("text must contain at least one non-whitespace character")
         return validate_text_input(value, max_length=MAX_TEXT_LENGTH_DEFAULT)
 
     @field_validator("user_id")
@@ -48,6 +52,8 @@ class BatchAdaptRequest(BaseModel):
     @classmethod
     def _validate_texts(cls, value: list[str]) -> list[str]:
         for item in value:
+            if not item.strip():
+                raise ValueError("each text must contain at least one non-whitespace character")
             validate_text_input(item, max_length=MAX_TEXT_LENGTH_DEFAULT)
         return value
 

@@ -8,13 +8,32 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
 
 from neurobridge import CustomProfile, Profile
+from neurobridge.core.profile import get_profile_config
+from neurobridge.core.validators import validate_user_id
 from neurobridge.server.models import FeedbackPatchRequest, ProfileGetResponse, ProfileSetRequest
 
 router = APIRouter(tags=["profiles"])
 
 
+def _validate_path_user_id(user_id: str) -> str:
+    """Validate a user_id taken from the URL path.
+
+    Without this, IDs that fail validation raise ValueError deep inside the
+    bridge and surface as opaque 500s instead of 422s.
+    """
+    try:
+        return validate_user_id(user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
 @router.post("/profile")
 def set_profile(payload: ProfileSetRequest, request: Request):
+    """Persist a profile configuration for a user.
+
+    The shared bridge default is never mutated: one user's stored profile must
+    not change the output of other users' requests.
+    """
     bridge = request.app.state.bridge
 
     if payload.profile.strip().lower() == "custom":
@@ -27,7 +46,6 @@ def set_profile(payload: ProfileSetRequest, request: Request):
             custom.validate()
         except Exception as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        bridge.set_profile(custom)
         if bridge.memory_store is not None:
             bridge.memory_store.save_profile(payload.user_id, custom)
         profile_name = "custom"
@@ -39,11 +57,11 @@ def set_profile(payload: ProfileSetRequest, request: Request):
             raise HTTPException(
                 status_code=400, detail=f"Unsupported profile: {payload.profile}"
             ) from exc
-        bridge.set_profile(profile)
+        profile_config = get_profile_config(profile)
         if bridge.memory_store is not None:
-            bridge.memory_store.save_profile(payload.user_id, bridge._profile_config)
+            bridge.memory_store.save_profile(payload.user_id, profile_config)
         profile_name = profile.value
-        config_dict = asdict(bridge._profile_config)
+        config_dict = asdict(profile_config)
 
     now = datetime.now(timezone.utc).isoformat()
     return {
@@ -57,6 +75,7 @@ def set_profile(payload: ProfileSetRequest, request: Request):
 
 @router.get("/profile/{user_id}", response_model=ProfileGetResponse)
 def get_profile(user_id: str, request: Request) -> ProfileGetResponse:
+    user_id = _validate_path_user_id(user_id)
     bridge = request.app.state.bridge
     if bridge.memory_store is None:
         raise HTTPException(status_code=404, detail="No memory backend configured")
@@ -77,6 +96,7 @@ def get_profile(user_id: str, request: Request) -> ProfileGetResponse:
 
 @router.delete("/profile/{user_id}")
 def delete_profile(user_id: str, request: Request):
+    user_id = _validate_path_user_id(user_id)
     bridge = request.app.state.bridge
     bridge.delete_user_data(user_id)
     return {"status": "ok", "deleted": True, "user_id": user_id}
@@ -84,12 +104,14 @@ def delete_profile(user_id: str, request: Request):
 
 @router.get("/profile/{user_id}/export")
 def export_profile_data(user_id: str, request: Request):
+    user_id = _validate_path_user_id(user_id)
     bridge = request.app.state.bridge
     return bridge.export_user_data(user_id)
 
 
 @router.patch("/profile/{user_id}/feedback")
 def submit_feedback(user_id: str, payload: FeedbackPatchRequest, request: Request):
+    user_id = _validate_path_user_id(user_id)
     bridge = request.app.state.bridge
     bridge.submit_feedback(
         original_text=payload.original_text,

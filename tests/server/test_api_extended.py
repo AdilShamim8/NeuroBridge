@@ -334,3 +334,62 @@ def test_profile_used_is_serialized_as_wire_name() -> None:
     assert response.status_code == 200
     assert response.json()["profile_used"] == "dyslexia"
     assert "Profile." not in response.json()["profile_used"]
+
+
+def test_whitespace_only_text_returns_422_not_500() -> None:
+    """Regression: pydantic min_length=1 let '   ' through and bridge.chat
+    raised ValueError, surfacing as an opaque 500."""
+    app = create_app(
+        config=Config(memory_backend="none"),
+        server_config=ServerConfig(allowed_origins=["*"], rate_limit_per_minute=1000),
+    )
+    client = TestClient(app)
+
+    response = client.post("/api/v1/adapt", json={"text": "   "})
+    assert response.status_code == 422
+
+    batch = client.post("/api/v1/adapt/batch", json={"texts": ["ok text", "   "]})
+    assert batch.status_code == 422
+
+
+def test_quiz_out_of_range_answer_returns_400_not_500() -> None:
+    """Regression: '99' and '-1' parsed as ints and crashed score_answers with
+    an unhandled ValueError (500)."""
+    app = create_app(
+        config=Config(memory_backend="none"),
+        server_config=ServerConfig(allowed_origins=["*"], rate_limit_per_minute=1000),
+    )
+    client = TestClient(app)
+
+    questions = client.get("/api/v1/quiz/questions").json()["questions"]
+    valid = {q["id"]: "0" for q in questions}
+    valid["q1"] = "99"
+    response = client.post(
+        "/api/v1/quiz/submit", json={"answers": valid, "user_id": "quiz-user"}
+    )
+    assert response.status_code == 400
+
+    valid["q1"] = "-1"
+    response = client.post(
+        "/api/v1/quiz/submit", json={"answers": valid, "user_id": "quiz-user"}
+    )
+    assert response.status_code == 400
+
+
+def test_invalid_path_user_id_returns_422_not_500(tmp_path) -> None:
+    """Regression: DELETE /profile/bad id and the export endpoint propagated
+    ValueError from the bridge as 500s."""
+    app = create_app(
+        config=Config(memory_backend="sqlite", memory_path=str(tmp_path / "m.db")),
+        server_config=ServerConfig(allowed_origins=["*"], rate_limit_per_minute=1000),
+    )
+    client = TestClient(app)
+
+    deleted = client.delete("/api/v1/profile/bad%20id")
+    assert deleted.status_code == 422
+
+    exported = client.get("/api/v1/profile/bad%20id/export")
+    assert exported.status_code == 422
+
+    got = client.get("/api/v1/profile/bad%20id")
+    assert got.status_code == 422

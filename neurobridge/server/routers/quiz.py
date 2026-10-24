@@ -42,13 +42,24 @@ def submit_quiz(payload: QuizSubmitRequest, request: Request) -> QuizResultRespo
             raise HTTPException(
                 status_code=400, detail=f"Invalid answer index for {question.id}"
             ) from exc
+        # Out-of-range and negative indices are syntactically valid ints but
+        # crash score_answers with an unhandled ValueError (opaque 500).
+        if not 0 <= option_index < len(question.options):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Answer index for {question.id} must be between 0 and "
+                    f"{len(question.options) - 1}"
+                ),
+            )
         answers[question.id] = option_index
 
     result = engine.score_answers(answers)
 
-    bridge = request.app.state.bridge
+    # Persist the recommendation for the submitting user only. The shared
+    # bridge default is never mutated by an HTTP request.
     if payload.user_id:
-        bridge.set_profile(result)
+        bridge = request.app.state.bridge
         if bridge.memory_store is not None:
             bridge.memory_store.save_profile(payload.user_id, result.recommended_config)
 
