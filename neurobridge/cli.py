@@ -147,7 +147,10 @@ def adapt(
     with console.status(spinner):
         result = bridge.chat(source_text, user_id=user_id)
 
-    adapter_map = {
+    adapter_map: dict[
+        str,
+        type[MarkdownAdapter | HTMLAdapter | PlainTextAdapter | JSONAdapter | TTSAdapter],
+    ] = {
         "markdown": MarkdownAdapter,
         "html": HTMLAdapter,
         "plain": PlainTextAdapter,
