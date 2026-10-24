@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import asdict
 
+import pytest
+
 from neurobridge.core.memory import (
     FeedbackRecord,
     InMemoryStore,
@@ -99,7 +101,8 @@ class _FakePool:
 
 
 def test_redis_store_happy_path_with_fake_client() -> None:
-    store = RedisMemoryStore("redis://localhost:1", fallback_store=InMemoryStore())
+    with pytest.warns(UserWarning, match="falling back"):
+        store = RedisMemoryStore("redis://localhost:1", fallback_store=InMemoryStore())
     fake = _FakeRedis()
     store._redis = fake
     store._pool = _FakePool()
@@ -128,7 +131,8 @@ def test_redis_store_happy_path_with_fake_client() -> None:
 
 def test_redis_store_gracefully_handles_backend_failures() -> None:
     fallback = InMemoryStore()
-    store = RedisMemoryStore("redis://localhost:1", fallback_store=fallback)
+    with pytest.warns(UserWarning, match="falling back"):
+        store = RedisMemoryStore("redis://localhost:1", fallback_store=fallback)
     profile = get_profile_config(Profile.DYSLEXIA)
     fallback.save_profile("u2", profile)
 

@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 from time import perf_counter
 
+import pytest
+
 from neurobridge import Config, NeuroBridge, Profile
 from neurobridge.core.memory import FeedbackRecord, RedisMemoryStore, create_feedback_record
 
@@ -41,7 +43,8 @@ def test_cache_hit_rate_on_repeated_text() -> None:
 
 
 def test_redis_store_graceful_degradation() -> None:
-    store = RedisMemoryStore("redis://localhost:6399/0")
+    with pytest.warns(UserWarning, match="falling back"):
+        store = RedisMemoryStore("redis://localhost:6399/0")
     record = create_feedback_record(
         user_id="u1",
         original_text="Original",

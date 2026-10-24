@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from neurobridge.core.memory import (
     FeedbackAnalyser,
     InMemoryStore,
@@ -12,7 +14,8 @@ from neurobridge.core.profile import Profile, get_profile_config
 
 
 def test_redis_store_fallback_paths_without_redis() -> None:
-    store = RedisMemoryStore("redis://localhost:1")
+    with pytest.warns(UserWarning, match="falling back"):
+        store = RedisMemoryStore("redis://localhost:1")
     profile = get_profile_config(Profile.ADHD)
     store.save_profile("u-fallback", profile)
 
