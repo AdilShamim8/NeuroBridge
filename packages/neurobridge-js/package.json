@@ -26,11 +26,12 @@
   "scripts": {
     "build": "rollup -c",
     "typecheck": "tsc --noEmit",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "test": "vitest run"
   },
   "peerDependencies": {
-    "openai": ">=4.0.0",
-    "@anthropic-ai/sdk": ">=0.24.0"
+    "@anthropic-ai/sdk": ">=0.24.0",
+    "openai": ">=4.0.0"
   },
   "peerDependenciesMeta": {
     "openai": {
@@ -44,14 +45,15 @@
     "sentence-splitter": "^5.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.13.10",
     "@rollup/plugin-commonjs": "^26.0.1",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
+    "@types/node": "^22.13.10",
     "rimraf": "^6.0.1",
     "rollup": "^4.21.2",
     "tslib": "^2.7.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^5.0.5"
   }
 }
