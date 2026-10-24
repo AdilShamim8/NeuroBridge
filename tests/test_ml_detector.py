@@ -8,6 +8,9 @@ def test_detector_falls_back_with_no_events() -> None:
     result = detector.detect([])
     assert result.fallback_to_quiz is True
     assert result.confidence == 0.0
+    from neurobridge.core.profile import Profile
+
+    assert result.profile == Profile.ADHD
 
 
 def test_detector_returns_reasoning_for_minimal_events() -> None:
@@ -25,11 +28,6 @@ def test_detector_returns_reasoning_for_minimal_events() -> None:
     # else-clause), so add the no-events contract explicitly.
     assert result.reasoning.strip()
     assert "Top probabilities" in result.reasoning or "Falling back to quiz" in result.reasoning
-
-    empty = ProfileDetector().detect([])
-    assert empty.fallback_to_quiz is True
-    assert empty.profile == Profile.ADHD
-    assert empty.confidence == 0.0
 
 
 def test_detector_falls_back_when_model_is_unavailable(monkeypatch) -> None:

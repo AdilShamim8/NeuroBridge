@@ -1,6 +1,7 @@
 """Day 11 tests for output format adapters."""
 
 import json
+from typing import ClassVar
 from html.parser import HTMLParser
 
 from neurobridge.core.format_adapter import (
@@ -57,7 +58,9 @@ def test_html_output_tags_balance_and_nest_correctly() -> None:
     from html.parser import HTMLParser
 
     class _BalanceChecker(HTMLParser):
-        VOID = {"br", "img", "hr", "meta", "link", "input"}
+        VOID: ClassVar[frozenset[str]] = frozenset(
+            {"br", "img", "hr", "meta", "link", "input"}
+        )
 
         def __init__(self) -> None:
             super().__init__()

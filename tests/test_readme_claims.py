@@ -41,9 +41,9 @@ def test_readme_does_not_claim_nonexistent_integrations(readme_text: str) -> Non
         "neurobridge[ollama]",
         "neurobridgeuggingface",
     ):
-        assert fabricated not in readme_text, (
-            f"README mentions {fabricated!r}, which does not exist in the package"
-        )
+        assert (
+            fabricated not in readme_text
+        ), f"README mentions {fabricated!r}, which does not exist in the package"
 
 
 def test_readme_does_not_claim_twelve_modules(readme_text: str) -> None:
