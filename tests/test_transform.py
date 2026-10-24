@@ -231,9 +231,7 @@ def test_pipeline_does_not_warn_on_expected_no_ops() -> None:
     with _warnings.catch_warnings(record=True) as caught:
         _warnings.simplefilter("always")
         bridge.adapt("A plain sentence. Another one follows it. A third sentence here.")
-    noop_warnings = [
-        w for w in caught if "produced no changes" in str(w.message)
-    ]
+    noop_warnings = [w for w in caught if "produced no changes" in str(w.message)]
     assert noop_warnings == []
 
 
@@ -255,9 +253,7 @@ def test_adhd_pipeline_keeps_code_fences_at_line_start() -> None:
     in CommonMark, so the code block stopped rendering."""
     bridge = NeuroBridge(config=Config(memory_backend="none"))
     bridge.set_profile(Profile.ADHD)
-    adapted = bridge.adapt(
-        "Intro paragraph.\n\n```python\nprint(1)\n```\n\nAfter the code block."
-    )
+    adapted = bridge.adapt("Intro paragraph.\n\n```python\nprint(1)\n```\n\nAfter the code block.")
 
     assert adapted.count("**") % 2 == 0
     assert "****" not in adapted

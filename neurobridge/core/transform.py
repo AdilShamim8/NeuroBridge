@@ -223,11 +223,7 @@ def _safe_sent_tokenize(text: str) -> list[str]:
         return []
     if _nltk_sent_tokenize is None:
         return _merge_markup_fragments(
-            [
-                segment.strip()
-                for segment in _SENTENCE_FALLBACK_RE.findall(text)
-                if segment.strip()
-            ]
+            [segment.strip() for segment in _SENTENCE_FALLBACK_RE.findall(text) if segment.strip()]
         )
     try:
         return _merge_markup_fragments(
@@ -235,11 +231,7 @@ def _safe_sent_tokenize(text: str) -> list[str]:
         )
     except LookupError:
         return _merge_markup_fragments(
-            [
-                segment.strip()
-                for segment in _SENTENCE_FALLBACK_RE.findall(text)
-                if segment.strip()
-            ]
+            [segment.strip() for segment in _SENTENCE_FALLBACK_RE.findall(text) if segment.strip()]
         )
 
 
