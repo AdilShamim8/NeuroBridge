@@ -55,5 +55,27 @@
     "tslib": "^2.7.0",
     "typescript": "^5.7.2",
     "vitest": "^5.0.5"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdilShamim8/NeuroBridge.git",
+    "directory": "packages/neurobridge-js"
+  },
+  "author": "Adil Shamim",
+  "bugs": {
+    "url": "https://github.com/AdilShamim8/NeuroBridge/issues"
+  },
+  "homepage": "https://github.com/AdilShamim8/NeuroBridge#readme",
+  "keywords": [
+    "accessibility",
+    "neurodiversity",
+    "llm",
+    "middleware",
+    "ai",
+    "text-transformation"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false
 }

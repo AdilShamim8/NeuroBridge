@@ -22,7 +22,7 @@ console.log(result.adaptedText);
 <script src="https://unpkg.com/neurobridge/dist/browser/neurobridge.global.js"></script>
 <script>
   const nb = new window.NeuroBridge();
-  nb.setProfile("ADHD");
+  nb.setProfile(NeuroBridge.Profile.ADHD);
   const result = nb.adaptSync("This is critical and must be done ASAP.");
   console.log(result.adaptedText);
 </script>
@@ -43,4 +43,4 @@ console.log(result.adaptedText);
 ## Related
 
 - Python package: https://pypi.org/project/neurobridge/
-- Repository: https://github.com/yourusername/neurobridge
+- Repository: https://github.com/AdilShamim8/NeuroBridge

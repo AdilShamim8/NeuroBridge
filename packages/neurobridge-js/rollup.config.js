@@ -17,6 +17,7 @@ export default [
       format: "esm",
       sourcemap: true
     },
+    external: ["fs", "path"],
     plugins: basePlugins
   },
   {
@@ -27,10 +28,12 @@ export default [
       exports: "named",
       sourcemap: true
     },
+    external: ["fs", "path"],
     plugins: basePlugins
   },
   {
-    input: "src/index.ts",
+    // Browser entry excludes NodeFileMemory (fs/path imports break the bundle).
+    input: "src/browser.ts",
     output: {
       file: "dist/browser/neurobridge.global.js",
       format: "iife",
