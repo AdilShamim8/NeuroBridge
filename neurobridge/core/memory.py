@@ -280,6 +280,7 @@ class RedisMemoryStore(BaseMemoryStore):
         # doubles in the test suite, and the redis-py stubs union sync/async returns.
         self._redis: Any = None
         self._pool: Any = None
+        self._fallback_reason: str | None = None
         try:
             import redis  # type: ignore
 
