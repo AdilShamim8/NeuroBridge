@@ -203,3 +203,18 @@ def test_adhd_pipeline_emits_balanced_bold_markers() -> None:
 
     assert adapted.count("**") % 2 == 0
     assert "****" not in adapted
+
+
+def test_number_contextualiser_small_percentages_are_mathematically_true() -> None:
+    """Regression: Fraction(...).limit_denominator(20) rounds percentages below
+    2.5% to 0/1, and the module emitted '(0 in every 1)' - a false statement
+    from the one module whose job is numeric clarity for dyscalculia users."""
+    bridge = NeuroBridge(config=Config(memory_backend="none"))
+    bridge.set_profile(Profile.DYSCALCULIA)
+    adapted = bridge.adapt("Only 2% failed the check.")
+
+    assert "0 in every 1" not in adapted
+    assert "less than 1 in every 20" in adapted
+
+    adapted2 = bridge.adapt("About 0.7% of users are affected.")
+    assert "0 in every 1" not in adapted2

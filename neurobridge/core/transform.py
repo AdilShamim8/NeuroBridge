@@ -626,6 +626,10 @@ class NumberContextualiser(BaseTransformModule):
             fraction = Fraction(number / 100).limit_denominator(20)
             if fraction.numerator == 1:
                 context = f"1 in every {fraction.denominator}"
+            elif fraction.numerator == 0:
+                # Below 1/20 the denominator cap rounds to zero ("0 in every
+                # 1"), which is mathematically false. State the bound instead.
+                context = "less than 1 in every 20"
             else:
                 context = f"{fraction.numerator} in every {fraction.denominator}"
         return f"{match.group(0)} ({context})"
