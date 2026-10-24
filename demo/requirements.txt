@@ -1,2 +1,2 @@
 neurobridge
-gradio>=4.0
+gradio>=6.30.0
