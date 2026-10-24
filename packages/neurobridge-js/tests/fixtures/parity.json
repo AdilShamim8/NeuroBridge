@@ -1,0 +1,152 @@
+[
+  {
+    "profile": "adhd",
+    "input": "You must immediately fix the critical bug. The deployment window closes in 2 hours. Revenue was 22% lower than target this quarter.",
+    "expected": "**Bottom line: Revenue was 22% lower than target this quarter.**\n\nBackground: **You must immediately fix the** critical bug.\n\nBackground: The deployment window closes in 2 hours."
+  },
+  {
+    "profile": "adhd",
+    "input": "This is urgent. You must finish the report immediately and provide a detailed breakdown of all budget percentages and assumptions.",
+    "expected": "**Bottom line: You must finish the report immediately and provide a detailed breakdown of all budget percentages and assumptions.**\n\nBackground: **This is urgent."
+  },
+  {
+    "profile": "adhd",
+    "input": "Deploy the service and verify the migration. Therefore the release is unblocked. The latency dropped by 35% after the cache change, which helped retention. For example, session length rose for 3 weeks.",
+    "expected": "Summary: **Deploy the service and verify** the migration. Therefore the release is unblocked. The latency dropped by 35% after the cache change, which helped retention.\n\nExample: **For example, session length rose** for 3 weeks."
+  },
+  {
+    "profile": "adhd",
+    "input": "Oh great, the build broke again. At the end of the day, we need to touch base and bite the bullet on the refactor. It is worth noting that some modules use vague words like many and soon.",
+    "expected": "**Bottom line: some modules use vague words like many and soon.**\n\nBackground: **Oh great, the build broke** again.\n\nBackground: , we need to touch base and bite the bullet on the refactor."
+  },
+  {
+    "profile": "adhd",
+    "input": "The error rate is 0.8% and the cluster costs $1.2 million per year. Downtime lasted 3-4 days. The dataset is 500 GB. In summary, capacity planning must improve. Consider the failure domains.",
+    "expected": "Summary: **In summary, capacity planning must** improve. Consider the failure domains.\n\nBackground: **The error rate is 0.8%** and the cluster costs $1.2 million per year. Downtime lasted 3-4 days. The dataset is 500 GB."
+  },
+  {
+    "profile": "adhd",
+    "input": "Keep calm. The backup restore finished and the data is intact.\n\nSecond paragraph mentions a risk of data loss which was mitigated. The deadline passed without incident.",
+    "expected": "**Bottom line: Second paragraph mentions a risk of data loss which was mitigated.**\n\nBackground: **Keep calm. The backup restore** finished and the data is intact.\n\nBackground: The deadline passed without incident."
+  },
+  {
+    "profile": "autism",
+    "input": "You must immediately fix the critical bug. The deployment window closes in 2 hours. Revenue was 22% lower than target this quarter.",
+    "expected": "You must immediately fix the critical bug. The deployment window closes in 2 hours.\n\nRevenue was 22% lower than target this quarter."
+  },
+  {
+    "profile": "autism",
+    "input": "This is urgent. You must finish the report immediately and provide a detailed breakdown of all budget percentages and assumptions.",
+    "expected": "This is urgent. You must finish the report immediately and provide a detailed breakdown of all budget percentages and assumptions."
+  },
+  {
+    "profile": "autism",
+    "input": "Deploy the service and verify the migration. Therefore the release is unblocked. The latency dropped by 35% after the cache change, which helped retention. For example, session length rose for 3 weeks.",
+    "expected": "Deploy the service and verify the migration. Therefore the release is unblocked.\n\nThe latency dropped by 35% after the cache change, which helped retention. For example, session length rose for 3 weeks."
+  },
+  {
+    "profile": "autism",
+    "input": "Oh great, the build broke again. At the end of the day, we need to touch base and bite the bullet on the refactor. It is worth noting that some modules use vague words like many and soon.",
+    "expected": "This is difficult, the build broke again. , we need to make contact and do the difficult thing on the refactor.\n\n a few modules use vague words like several and within a clear timeframe."
+  },
+  {
+    "profile": "autism",
+    "input": "The error rate is 0.8% and the cluster costs $1.2 million per year. Downtime lasted 3-4 days. The dataset is 500 GB. In summary, capacity planning must improve. Consider the failure domains.",
+    "expected": "The error rate is 0.8% and the cluster costs $1.2 million per year. Downtime lasted 3-4 days.\n\nThe dataset is 500 GB. In summary, capacity planning must improve.\n\nConsider the failure domains."
+  },
+  {
+    "profile": "autism",
+    "input": "Keep calm. The backup restore finished and the data is intact.\n\nSecond paragraph mentions a risk of data loss which was mitigated. The deadline passed without incident.",
+    "expected": "Keep calm. The backup restore finished and the data is intact.\n\nSecond paragraph mentions a risk of data loss which was mitigated. The deadline passed without incident."
+  },
+  {
+    "profile": "dyslexia",
+    "input": "You must immediately fix the critical bug. The deployment window closes in 2 hours. Revenue was 22% lower than target this quarter.",
+    "expected": "You must immediately fix the critical bug. The deployment window closes in 2 hours.\n\nRevenue was 22% lower than target this quarter."
+  },
+  {
+    "profile": "dyslexia",
+    "input": "This is urgent. You must finish the report immediately and provide a detailed breakdown of all budget percentages and assumptions.",
+    "expected": "This is urgent. You must finish the report immediately and provide a detailed breakdown of all budget percentages and assumptions."
+  },
+  {
+    "profile": "dyslexia",
+    "input": "Deploy the service and verify the migration. Therefore the release is unblocked. The latency dropped by 35% after the cache change, which helped retention. For example, session length rose for 3 weeks.",
+    "expected": "Deploy the service and verify the migration. Therefore the release is unblocked.\n\nThe latency dropped by 35% after the cache change, which helped retention. For example, session length rose for 3 weeks."
+  },
+  {
+    "profile": "dyslexia",
+    "input": "Oh great, the build broke again. At the end of the day, we need to touch base and bite the bullet on the refactor. It is worth noting that some modules use vague words like many and soon.",
+    "expected": "Oh great, the build broke again. , we need to touch base and bite the bullet on the refactor.\n\n some modules use vague words like many and soon."
+  },
+  {
+    "profile": "dyslexia",
+    "input": "The error rate is 0.8% and the cluster costs $1.2 million per year. Downtime lasted 3-4 days. The dataset is 500 GB. In summary, capacity planning must improve. Consider the failure domains.",
+    "expected": "The error rate is 0.8% and the cluster costs $1.2 million per year. Downtime lasted 3-4 days.\n\nThe dataset is 500 GB. In summary, capacity planning must improve.\n\nConsider the failure domains."
+  },
+  {
+    "profile": "dyslexia",
+    "input": "Keep calm. The backup restore finished and the data is intact.\n\nSecond paragraph mentions a risk of data loss which was mitigated. The deadline passed without incident.",
+    "expected": "Keep calm. The backup restore finished and the data is intact.\n\nSecond paragraph mentions a risk of data loss which was mitigated. The deadline passed without incident."
+  },
+  {
+    "profile": "anxiety",
+    "input": "You must immediately fix the critical bug. The deployment window closes in 2 hours. Revenue was 22% lower than target this quarter.",
+    "expected": "A calm note: You consider when ready fix the important bug. The deployment window closes in 2 hours. Revenue was 22% lower than target this quarter."
+  },
+  {
+    "profile": "anxiety",
+    "input": "This is urgent. You must finish the report immediately and provide a detailed breakdown of all budget percentages and assumptions.",
+    "expected": "This is worth noting. You consider finish the report when ready and provide a detailed breakdown of all budget percentages and assumptions."
+  },
+  {
+    "profile": "anxiety",
+    "input": "Deploy the service and verify the migration. Therefore the release is unblocked. The latency dropped by 35% after the cache change, which helped retention. For example, session length rose for 3 weeks.",
+    "expected": "Deploy the service and verify the migration. Therefore the release is unblocked. The latency dropped by 35% after the cache change, which helped retention.\n\nFor example, session length rose for 3 weeks."
+  },
+  {
+    "profile": "anxiety",
+    "input": "Oh great, the build broke again. At the end of the day, we need to touch base and bite the bullet on the refactor. It is worth noting that some modules use vague words like many and soon.",
+    "expected": "Oh great, the build broke again. , we need to touch base and bite the bullet on the refactor. some modules use vague words like many and soon."
+  },
+  {
+    "profile": "anxiety",
+    "input": "The error rate is 0.8% and the cluster costs $1.2 million per year. Downtime lasted 3-4 days. The dataset is 500 GB. In summary, capacity planning must improve. Consider the failure domains.",
+    "expected": "Here is some context: The issue to address rate is 0.8% and the cluster costs $1.2 million per year. Downtime lasted 3-4 days. The dataset is 500 GB.\n\nGood news first - In summary, capacity planning consider improve. Consider the setback domains."
+  },
+  {
+    "profile": "anxiety",
+    "input": "Keep calm. The backup restore finished and the data is intact.\n\nSecond paragraph mentions a risk of data loss which was mitigated. The deadline passed without incident.",
+    "expected": "Keep calm. The backup restore finished and the data is intact.\n\nGood news first - Second paragraph mentions a risk of data loss which was mitigated. The target date passed without incident."
+  },
+  {
+    "profile": "dyscalculia",
+    "input": "You must immediately fix the critical bug. The deployment window closes in 2 hours. Revenue was 22% lower than target this quarter.",
+    "expected": "You must immediately fix the critical bug. The deployment window closes in 2 hours. Revenue was 22% (2 in every 9) lower than target this quarter."
+  },
+  {
+    "profile": "dyscalculia",
+    "input": "This is urgent. You must finish the report immediately and provide a detailed breakdown of all budget percentages and assumptions.",
+    "expected": "This is urgent. You must finish the report immediately and provide a detailed breakdown of all budget percentages and assumptions."
+  },
+  {
+    "profile": "dyscalculia",
+    "input": "Deploy the service and verify the migration. Therefore the release is unblocked. The latency dropped by 35% after the cache change, which helped retention. For example, session length rose for 3 weeks.",
+    "expected": "Deploy the service and verify the migration. Therefore the release is unblocked. The latency dropped by 35% (7 in every 20) after the cache change, which helped retention.\n\nFor example, session length rose for 3 weeks."
+  },
+  {
+    "profile": "dyscalculia",
+    "input": "Oh great, the build broke again. At the end of the day, we need to touch base and bite the bullet on the refactor. It is worth noting that some modules use vague words like many and soon.",
+    "expected": "Oh great, the build broke again. , we need to touch base and bite the bullet on the refactor. some modules use vague words like many and soon."
+  },
+  {
+    "profile": "dyscalculia",
+    "input": "The error rate is 0.8% and the cluster costs $1.2 million per year. Downtime lasted 3-4 days. The dataset is 500 GB. In summary, capacity planning must improve. Consider the failure domains.",
+    "expected": "The error rate is 0.8% (less than 1 in every 20) and the cluster costs $1.2 million (roughly the annual salary of 200 average workers) per year. Downtime lasted 3-4 days (a short planning cycle). The dataset is 500 GB (roughly a short HD video).\n\nIn summary, capacity planning must improve. Consider the failure domains."
+  },
+  {
+    "profile": "dyscalculia",
+    "input": "Keep calm. The backup restore finished and the data is intact.\n\nSecond paragraph mentions a risk of data loss which was mitigated. The deadline passed without incident.",
+    "expected": "Keep calm. The backup restore finished and the data is intact.\n\nSecond paragraph mentions a risk of data loss which was mitigated. The deadline passed without incident."
+  }
+]
