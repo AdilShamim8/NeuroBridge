@@ -38,7 +38,7 @@ def main() -> None:
     samples.sort()
 
     def pct(fraction: float) -> float:
-        pos = min(len(samples) - 1, int(round(fraction * (len(samples) - 1))))
+        pos = min(len(samples) - 1, round(fraction * (len(samples) - 1)))
         return samples[pos]
 
     print("benchmark_api (in-process ASGI transport, no network/uvicorn)")

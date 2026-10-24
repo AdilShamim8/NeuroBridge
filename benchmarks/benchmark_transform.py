@@ -20,7 +20,7 @@ RUNS = 100
 def _percentile(sorted_samples: list[float], fraction: float) -> float:
     if not sorted_samples:
         return 0.0
-    index = min(len(sorted_samples) - 1, int(round(fraction * (len(sorted_samples) - 1))))
+    index = min(len(sorted_samples) - 1, round(fraction * (len(sorted_samples) - 1)))
     return sorted_samples[index]
 
 
