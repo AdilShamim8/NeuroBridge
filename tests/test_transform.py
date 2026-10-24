@@ -263,3 +263,49 @@ def test_adhd_pipeline_keeps_code_fences_at_line_start() -> None:
             # line above), and closing fences must not carry an info string.
             assert line.lstrip().startswith("```")
             assert "Background: ```" not in line
+
+
+class TestDecimalIntegrity:
+    """Numbers must survive tokenization: the sentence tokenizer used to
+    split 0.8% into "0." + "8%", and the chunker then rendered "$1.2 million"
+    as "$1.\\n\\n2 million per year." - silently corrupting values."""
+
+    def test_safe_sent_tokenize_keeps_decimals_whole(self) -> None:
+        from neurobridge.core.transform import _safe_sent_tokenize
+
+        assert _safe_sent_tokenize("The error rate is 0.8%.") == ["The error rate is 0.8%."]
+
+    def test_safe_sent_tokenize_keeps_versions_and_ips_whole(self) -> None:
+        from neurobridge.core.transform import _safe_sent_tokenize
+
+        assert _safe_sent_tokenize("Version 1.2.3 shipped.") == ["Version 1.2.3 shipped."]
+        assert _safe_sent_tokenize("Host 192.168.0.1 is up.") == ["Host 192.168.0.1 is up."]
+        assert _safe_sent_tokenize("Pi is 3.14.") == ["Pi is 3.14."]
+
+    def test_sentence_boundary_after_digit_still_splits(self) -> None:
+        from neurobridge.core.transform import _safe_sent_tokenize
+
+        assert _safe_sent_tokenize("I have 3. Do you?") == ["I have 3.", "Do you?"]
+
+    def test_adapt_preserves_currency_decimal(self) -> None:
+        bridge = NeuroBridge()
+        bridge.set_profile(Profile.AUTISM)
+        adapted = bridge.adapt(
+            "The error rate is 0.8% and the cluster costs $1.2 million per year."
+        )
+        assert "0.8%" in adapted
+        assert "$1.2 million" in adapted
+
+    def test_adapt_dyscalculia_contextualises_intact_decimal(self) -> None:
+        bridge = NeuroBridge()
+        bridge.set_profile(Profile.DYSCALCULIA)
+        adapted = bridge.adapt("The error rate is 0.8%.")
+        assert "0.8%" in adapted
+        assert "0. 8%" not in adapted
+
+    def test_adhd_bottom_line_keeps_decimal_whole(self) -> None:
+        bridge = NeuroBridge()
+        bridge.set_profile(Profile.ADHD)
+        adapted = bridge.adapt("The error rate is 0.8%.")
+        assert "0.8%" in adapted
+        assert "0. 8%" not in adapted

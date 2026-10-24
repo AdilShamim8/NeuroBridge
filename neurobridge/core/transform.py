@@ -29,6 +29,12 @@ _NUMBERED_LIST_BLOCK_RE = re.compile(r"(?:^|\n)(?:\s*\d+\.\s.+(?:\n|$))+", re.MU
 _WORD_RE = re.compile(r"\b\w+\b", re.UNICODE)
 _CONJUNCTION_DELIMITERS: Sequence[str] = (", and", ", but", ", which", ", that")
 _SENTENCE_FALLBACK_RE = re.compile(r"[^.!?]+[.!?]?", re.UNICODE)
+# A period between two digits is part of a number (0.8, 1.2.3, 192.168.0.1),
+# never a sentence boundary. Tokenizing across it tore numbers apart:
+# "0.8%" became "0." + "8%" and the chunker then rendered "$1.2 million"
+# as "$1.\n\n2 million per year.", silently corrupting the value.
+_DECIMAL_DOT_RE = re.compile(r"(?<=\d)\.(?=\d)")
+_DECIMAL_DOT_PLACEHOLDER = "\u2063"
 _DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
 
@@ -218,21 +224,29 @@ def _merge_markup_fragments(sentences: list[str]) -> list[str]:
 
 
 def _safe_sent_tokenize(text: str) -> list[str]:
-    """Tokenize sentences using NLTK with a regex fallback if punkt is unavailable."""
+    """Tokenize sentences using NLTK with a regex fallback if punkt is unavailable.
+
+    Periods inside numbers are masked before tokenizing and restored in each
+    segment, so decimals, version numbers, and IP addresses survive the
+    pipeline as single tokens.
+    """
     if not text.strip():
         return []
+    protected = _DECIMAL_DOT_RE.sub(_DECIMAL_DOT_PLACEHOLDER, text)
     if _nltk_sent_tokenize is None:
-        return _merge_markup_fragments(
-            [segment.strip() for segment in _SENTENCE_FALLBACK_RE.findall(text) if segment.strip()]
-        )
-    try:
-        return _merge_markup_fragments(
-            [segment.strip() for segment in _nltk_sent_tokenize(text) if segment.strip()]
-        )
-    except LookupError:
-        return _merge_markup_fragments(
-            [segment.strip() for segment in _SENTENCE_FALLBACK_RE.findall(text) if segment.strip()]
-        )
+        segments = _SENTENCE_FALLBACK_RE.findall(protected)
+    else:
+        try:
+            segments = _nltk_sent_tokenize(protected)
+        except LookupError:
+            segments = _SENTENCE_FALLBACK_RE.findall(protected)
+    return _merge_markup_fragments(
+        [
+            segment.strip().replace(_DECIMAL_DOT_PLACEHOLDER, ".")
+            for segment in segments
+            if segment.strip()
+        ]
+    )
 
 
 def _sentence_word_count(sentence: str) -> int:
