@@ -108,8 +108,13 @@ def test_load_model_accepts_same_minor_version(tmp_path) -> None:
 
     meta_path = tmp_path / "detector.pkl.meta.json"
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
-    # Patch-level differences within the same minor are accepted.
-    meta["sklearn_version"] = "1.5.0"
+    # Patch-level differences within the runtime's minor are accepted. Derive
+    # the version instead of hardcoding one: CI resolves whatever the newest
+    # satisfying scikit-learn is, which need not match the local pin.
+    import sklearn
+
+    major, minor = sklearn.__version__.split(".")[:2]
+    meta["sklearn_version"] = f"{major}.{minor}.0"
     meta_path.write_text(json.dumps(meta), encoding="utf-8")
 
     assert load_model(model_path) is not None
