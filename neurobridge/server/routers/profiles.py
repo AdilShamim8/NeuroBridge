@@ -43,9 +43,9 @@ def set_profile(payload: ProfileSetRequest, request: Request):
         if bridge.memory_store is not None:
             bridge.memory_store.save_profile(
                 payload.user_id, bridge._profile_config
-            )  # noqa: SLF001
+            )
         profile_name = profile.value
-        config_dict = asdict(bridge._profile_config)  # noqa: SLF001
+        config_dict = asdict(bridge._profile_config)
 
     now = datetime.now(timezone.utc).isoformat()
     return {

@@ -25,7 +25,7 @@ class _MockChatCompletions:
     def __init__(self, text: str) -> None:
         self._text = text
 
-    def create(self, *args, **kwargs):  # noqa: ANN002, ANN003
+    def create(self, *args, **kwargs):
         _ = args, kwargs
         return _MockResponse(choices=[_MockChoice(message=_MockMessage(content=self._text))])
 

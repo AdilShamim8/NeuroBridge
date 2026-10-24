@@ -5,8 +5,9 @@ Designed to work across langchain>=0.1.0 and >=0.2.0 import paths.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any
 
 from neurobridge.core.bridge import Config, NeuroBridge
 from neurobridge.core.profile import Profile
@@ -40,24 +41,24 @@ except Exception:  # pragma: no cover
 
     class Chain:  # type: ignore
         @property
-        def input_keys(self) -> List[str]:
+        def input_keys(self) -> list[str]:
             return ["query"]
 
         @property
-        def output_keys(self) -> List[str]:
+        def output_keys(self) -> list[str]:
             return ["text"]
 
-        def __call__(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        def __call__(self, inputs: dict[str, Any]) -> dict[str, Any]:
             return self._call(inputs)
 
-        def _call(self, inputs: Dict[str, Any], run_manager: Any = None) -> Dict[str, Any]:
+        def _call(self, inputs: dict[str, Any], run_manager: Any = None) -> dict[str, Any]:
             raise NotImplementedError
 
 
 class NeuroBridgeOutputParser(BaseOutputParser):
     """Adapt LLM output text with NeuroBridge before returning parsed output."""
 
-    def __init__(self, profile: Profile = Profile.ADHD, config: Optional[Config] = None) -> None:
+    def __init__(self, profile: Profile = Profile.ADHD, config: Config | None = None) -> None:
         bridge = NeuroBridge(config=config)
         bridge.set_profile(profile)
         object.__setattr__(self, "_bridge", bridge)
@@ -79,13 +80,13 @@ class NeuroBridgeCallbackHandler(BaseCallbackHandler):
     def __init__(
         self,
         profile: Profile = Profile.ADHD,
-        config: Optional[Config] = None,
-        user_id: Optional[str] = None,
+        config: Config | None = None,
+        user_id: str | None = None,
     ) -> None:
         self.bridge = NeuroBridge(config=config)
         self.bridge.set_profile(profile)
         self.user_id = user_id
-        self.last_adapted_text: Optional[str] = None
+        self.last_adapted_text: str | None = None
 
     def on_llm_end(self, response: Any, **kwargs: Any) -> None:
         _ = kwargs
@@ -127,9 +128,9 @@ class NeuroBridgeChain(Chain):
     def __init__(
         self,
         llm: Any,
-        prompt: Optional[Any] = None,
+        prompt: Any | None = None,
         profile: Profile = Profile.ADHD,
-        config: Optional[Config] = None,
+        config: Config | None = None,
     ) -> None:
         object.__setattr__(self, "_llm", llm)
         object.__setattr__(self, "_prompt", prompt)
@@ -140,7 +141,7 @@ class NeuroBridgeChain(Chain):
         return object.__getattribute__(self, "_llm")
 
     @property
-    def prompt(self) -> Optional[Any]:
+    def prompt(self) -> Any | None:
         return object.__getattribute__(self, "_prompt")
 
     @property
@@ -148,20 +149,20 @@ class NeuroBridgeChain(Chain):
         return object.__getattribute__(self, "_parser")
 
     @property
-    def input_keys(self) -> List[str]:
+    def input_keys(self) -> list[str]:
         return ["query"]
 
     @property
-    def output_keys(self) -> List[str]:
+    def output_keys(self) -> list[str]:
         return ["text"]
 
-    def _call(self, inputs: Dict[str, Any], run_manager: Any = None) -> Dict[str, Any]:
+    def _call(self, inputs: dict[str, Any], run_manager: Any = None) -> dict[str, Any]:
         _ = run_manager
         query = str(inputs.get("query", ""))
         text = self.run(query)
         return {"text": text}
 
-    def run(self, query: str, user_id: Optional[str] = None) -> str:
+    def run(self, query: str, user_id: str | None = None) -> str:
         rendered = self._render_prompt(query)
         raw = self._invoke_llm(rendered)
         return self.parser.parse(raw if user_id is None else raw)
@@ -206,25 +207,25 @@ class NeuroBridgeRetriever:
 
     retriever: Any
     profile: Profile = Profile.ADHD
-    config: Optional[Config] = None
+    config: Config | None = None
 
     def __post_init__(self) -> None:
         self.bridge = NeuroBridge(config=self.config)
         self.bridge.set_profile(self.profile)
 
-    def get_relevant_documents(self, query: str) -> List[Any]:
+    def get_relevant_documents(self, query: str) -> list[Any]:
         docs = self.retriever.get_relevant_documents(query)
         return self._adapt_documents(docs)
 
-    async def aget_relevant_documents(self, query: str) -> List[Any]:
+    async def aget_relevant_documents(self, query: str) -> list[Any]:
         if hasattr(self.retriever, "aget_relevant_documents"):
             docs = await self.retriever.aget_relevant_documents(query)
         else:
             docs = self.retriever.get_relevant_documents(query)
         return self._adapt_documents(docs)
 
-    def _adapt_documents(self, docs: Sequence[Any]) -> List[Any]:
-        adapted_docs: List[Any] = []
+    def _adapt_documents(self, docs: Sequence[Any]) -> list[Any]:
+        adapted_docs: list[Any] = []
         for doc in docs:
             content = getattr(doc, "page_content", None)
             if isinstance(content, str):

@@ -28,14 +28,14 @@ def test_config_from_env_parses_and_sanitizes(monkeypatch) -> None:
 
 def test_chat_raises_profile_not_set_when_not_explicit() -> None:
     bridge = NeuroBridge(config=Config(memory_backend="none"))
-    bridge._profile_explicit = False  # noqa: SLF001
+    bridge._profile_explicit = False
 
     with pytest.raises(Exception):
         bridge.chat("Hello")
 
 
 class _FailingClient:
-    def chat(self, message: str, **kwargs):  # noqa: ANN003
+    def chat(self, message: str, **kwargs):
         _ = message, kwargs
         raise RuntimeError("boom")
 
@@ -50,7 +50,7 @@ def test_apply_adjustments_updates_profile_and_pipeline() -> None:
     bridge = NeuroBridge(config=Config(memory_backend="none"))
     bridge.set_profile(Profile.ADHD)
 
-    bridge._apply_adjustments(  # noqa: SLF001
+    bridge._apply_adjustments(
         ProfileAdjustments(
             chunk_size_delta=1,
             max_sentence_words_delta=-2,
@@ -59,16 +59,16 @@ def test_apply_adjustments_updates_profile_and_pipeline() -> None:
         )
     )
     assert bridge.profile == Profile.CUSTOM
-    assert bridge._profile_config.tone == "calm"  # noqa: SLF001
+    assert bridge._profile_config.tone == "calm"
 
 
 def test_stream_helpers_extract_and_tail_detection() -> None:
-    sentences, tail = NeuroBridge._extract_complete_sentences("One. Two. Three")  # noqa: SLF001
+    sentences, tail = NeuroBridge._extract_complete_sentences("One. Two. Three")
     assert len(sentences) == 2
     assert tail.strip() == "Three"
 
-    assert NeuroBridge._has_incomplete_numeric_tail("Revenue is 3.") is True  # noqa: SLF001
-    assert NeuroBridge._has_incomplete_numeric_tail("Revenue is 3. Done.") is False  # noqa: SLF001
+    assert NeuroBridge._has_incomplete_numeric_tail("Revenue is 3.") is True
+    assert NeuroBridge._has_incomplete_numeric_tail("Revenue is 3. Done.") is False
 
 
 class _StreamDelta:
@@ -87,7 +87,7 @@ class _StreamPiece:
 
 
 class _StreamingClient:
-    def chat_stream(self, message: str, **kwargs):  # noqa: ANN003
+    def chat_stream(self, message: str, **kwargs):
         _ = kwargs
 
         async def _gen():
@@ -140,19 +140,19 @@ def test_extract_chunk_text_variants() -> None:
         def __str__(self) -> str:
             return "fallback"
 
-    assert NeuroBridge._extract_chunk_text(_TextChunk()) == "plain"  # noqa: SLF001
-    assert NeuroBridge._extract_chunk_text(_Other()) == "fallback"  # noqa: SLF001
+    assert NeuroBridge._extract_chunk_text(_TextChunk()) == "plain"
+    assert NeuroBridge._extract_chunk_text(_Other()) == "fallback"
 
 
 class _ChatOnlyClient:
-    def chat(self, message: str, **kwargs):  # noqa: ANN003
+    def chat(self, message: str, **kwargs):
         _ = kwargs
         return f"reply:{message}"
 
 
 async def _collect_source_chunks(bridge: NeuroBridge, message: str):
     output = []
-    async for token in bridge._iterate_source_chunks(message):  # noqa: SLF001
+    async for token in bridge._iterate_source_chunks(message):
         output.append(token)
     return output
 

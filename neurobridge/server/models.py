@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -16,8 +16,8 @@ from neurobridge.core.validators import (
 
 class AdaptRequest(BaseModel):
     text: str = Field(min_length=1)
-    user_id: Optional[str] = None
-    profile: Optional[str] = None
+    user_id: str | None = None
+    profile: str | None = None
 
     @field_validator("text")
     @classmethod
@@ -26,41 +26,41 @@ class AdaptRequest(BaseModel):
 
     @field_validator("user_id")
     @classmethod
-    def _validate_user_id(cls, value: Optional[str]) -> Optional[str]:
+    def _validate_user_id(cls, value: str | None) -> str | None:
         if value is None:
             return value
         return validate_user_id(value)
 
     @field_validator("profile")
     @classmethod
-    def _validate_profile(cls, value: Optional[str]) -> Optional[str]:
+    def _validate_profile(cls, value: str | None) -> str | None:
         if value is None:
             return value
         return validate_profile_name(value)
 
 
 class BatchAdaptRequest(BaseModel):
-    texts: List[str] = Field(min_length=1, max_length=20)
-    user_id: Optional[str] = None
-    profile: Optional[str] = None
+    texts: list[str] = Field(min_length=1, max_length=20)
+    user_id: str | None = None
+    profile: str | None = None
 
     @field_validator("texts")
     @classmethod
-    def _validate_texts(cls, value: List[str]) -> List[str]:
+    def _validate_texts(cls, value: list[str]) -> list[str]:
         for item in value:
             validate_text_input(item, max_length=MAX_TEXT_LENGTH_DEFAULT)
         return value
 
     @field_validator("user_id")
     @classmethod
-    def _validate_user_id(cls, value: Optional[str]) -> Optional[str]:
+    def _validate_user_id(cls, value: str | None) -> str | None:
         if value is None:
             return value
         return validate_user_id(value)
 
     @field_validator("profile")
     @classmethod
-    def _validate_profile(cls, value: Optional[str]) -> Optional[str]:
+    def _validate_profile(cls, value: str | None) -> str | None:
         if value is None:
             return value
         return validate_profile_name(value)
@@ -70,18 +70,18 @@ class AdaptResponse(BaseModel):
     adapted_text: str
     original_text: str
     profile_used: str
-    transforms_applied: List[str]
+    transforms_applied: list[str]
     processing_time_ms: float
 
 
 class BatchAdaptResponse(BaseModel):
-    results: List[AdaptResponse]
+    results: list[AdaptResponse]
 
 
 class ProfileSetRequest(BaseModel):
     user_id: str = Field(min_length=1)
     profile: str = Field(min_length=1)
-    custom_config: Optional[Dict[str, Any]] = None
+    custom_config: dict[str, Any] | None = None
 
     @field_validator("user_id")
     @classmethod
@@ -97,7 +97,7 @@ class ProfileSetRequest(BaseModel):
 class ProfileGetResponse(BaseModel):
     user_id: str
     profile: str
-    config: Dict[str, Any]
+    config: dict[str, Any]
     created_at: str
     last_used: str
 
@@ -114,12 +114,12 @@ class FeedbackPatchRequest(BaseModel):
 
 
 class QuizSubmitRequest(BaseModel):
-    user_id: Optional[str] = None
-    answers: Dict[str, str]
+    user_id: str | None = None
+    answers: dict[str, str]
 
     @field_validator("user_id")
     @classmethod
-    def _validate_user_id(cls, value: Optional[str]) -> Optional[str]:
+    def _validate_user_id(cls, value: str | None) -> str | None:
         if value is None:
             return value
         return validate_user_id(value)
@@ -127,10 +127,10 @@ class QuizSubmitRequest(BaseModel):
 
 class QuizResultResponse(BaseModel):
     primary_profile: str
-    secondary_profile: Optional[str]
+    secondary_profile: str | None
     confidence: float
-    recommended_config: Dict[str, Any]
+    recommended_config: dict[str, Any]
 
 
 class QuizQuestionsResponse(BaseModel):
-    questions: List[Dict[str, Any]]
+    questions: list[dict[str, Any]]

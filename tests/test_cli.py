@@ -84,7 +84,7 @@ def test_quiz_command_with_save(monkeypatch, tmp_path) -> None:
 def test_serve_command_happy_path(monkeypatch) -> None:
     called = {}
 
-    def fake_run(*args, **kwargs):  # noqa: ANN002, ANN003
+    def fake_run(*args, **kwargs):
         called["args"] = args
         called["kwargs"] = kwargs
 

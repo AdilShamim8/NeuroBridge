@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 import json
 import re
+from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from html import escape
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any
 
 from neurobridge.core.profile import Profile, ProfileConfig
 
@@ -45,7 +46,7 @@ class MarkdownAdapter(BaseFormatAdapter):
             return ""
 
         lines = text.splitlines()
-        normalized: List[str] = []
+        normalized: list[str] = []
         for line in lines:
             heading = _HEADING_RE.match(line)
             if heading:
@@ -104,9 +105,9 @@ class HTMLAdapter(BaseFormatAdapter):
         )
         return html
 
-    def _render_blocks(self, blocks: Sequence[Tuple[str, str]], profile: ProfileConfig) -> str:
+    def _render_blocks(self, blocks: Sequence[tuple[str, str]], profile: ProfileConfig) -> str:
         profile_name = _detect_profile_name(profile)
-        rendered: List[str] = []
+        rendered: list[str] = []
         total = len([b for b in blocks if b[0] != "heading"])
         index = 0
         in_list = False
@@ -201,7 +202,7 @@ class JSONAdapter(BaseFormatAdapter):
 
     def format(self, text: str, profile: ProfileConfig) -> str:
         blocks = _parse_blocks(text)
-        payload_blocks: List[Dict[str, Any]] = []
+        payload_blocks: list[dict[str, Any]] = []
         adapted_word_count = 0
 
         for index, (block_type, value) in enumerate(blocks):
@@ -311,14 +312,14 @@ def _detect_profile_name(profile: ProfileConfig) -> Profile:
     return Profile.CUSTOM
 
 
-def _parse_blocks(text: str) -> List[Tuple[str, str]]:
+def _parse_blocks(text: str) -> list[tuple[str, str]]:
     if not text.strip():
         return []
 
-    blocks: List[Tuple[str, str]] = []
+    blocks: list[tuple[str, str]] = []
     lines = text.splitlines()
     in_code = False
-    code_lines: List[str] = []
+    code_lines: list[str] = []
 
     for line in lines:
         stripped = line.strip()

@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
+import json
+import re
+import warnings
 from abc import ABC, abstractmethod
 from bisect import bisect_left
+from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass, field
 from fractions import Fraction
 from functools import lru_cache
-import json
 from pathlib import Path
-import re
 from time import perf_counter
-from typing import Any, Callable, Dict, List, Optional, Sequence
-import warnings
+from typing import Any
 
 from neurobridge.exceptions import TransformError
 
@@ -61,7 +62,7 @@ _IDIOM_RE = (
     else re.compile(r"^$", re.IGNORECASE)
 )
 
-_FILLER_REPLACEMENTS: Dict[re.Pattern[str], str] = {
+_FILLER_REPLACEMENTS: dict[re.Pattern[str], str] = {
     re.compile(r"\bIt is worth noting that\b", re.IGNORECASE): "",
     re.compile(r"\bAs you may know\b", re.IGNORECASE): "",
     re.compile(r"\bIt goes without saying\b", re.IGNORECASE): "",
@@ -70,7 +71,7 @@ _FILLER_REPLACEMENTS: Dict[re.Pattern[str], str] = {
     re.compile(r"\bAt the end of the day\b", re.IGNORECASE): "",
 }
 
-_ANXIETY_REPLACEMENTS: Dict[re.Pattern[str], str] = {
+_ANXIETY_REPLACEMENTS: dict[re.Pattern[str], str] = {
     re.compile(r"\bASAP\b", re.IGNORECASE): "when you have time",
     re.compile(r"\bimmediately\b", re.IGNORECASE): "when ready",
     re.compile(r"\bcritical\b", re.IGNORECASE): "important",
@@ -82,13 +83,13 @@ _ANXIETY_REPLACEMENTS: Dict[re.Pattern[str], str] = {
     re.compile(r"\berror\b", re.IGNORECASE): "issue to address",
 }
 
-_CATASTROPHIC_REPLACEMENTS: Dict[re.Pattern[str], str] = {
+_CATASTROPHIC_REPLACEMENTS: dict[re.Pattern[str], str] = {
     re.compile(r"\bthis will break\b", re.IGNORECASE): "this might need attention",
     re.compile(r"\byou must fix\b", re.IGNORECASE): "it is worth looking at",
     re.compile(r"\bthis is wrong\b", re.IGNORECASE): "this could be improved",
 }
 
-_VAGUE_QUALIFIER_REPLACEMENTS: Dict[re.Pattern[str], str] = {
+_VAGUE_QUALIFIER_REPLACEMENTS: dict[re.Pattern[str], str] = {
     re.compile(r"\bsome\b", re.IGNORECASE): "a few",
     re.compile(r"\bmany\b", re.IGNORECASE): "several",
     re.compile(r"\bsoon\b", re.IGNORECASE): "within a clear timeframe",
@@ -96,7 +97,7 @@ _VAGUE_QUALIFIER_REPLACEMENTS: Dict[re.Pattern[str], str] = {
     re.compile(r"\ba lot\b", re.IGNORECASE): "many",
 }
 
-_SARCASM_REPLACEMENTS: Dict[re.Pattern[str], str] = {
+_SARCASM_REPLACEMENTS: dict[re.Pattern[str], str] = {
     re.compile(r"\bOh great\b", re.IGNORECASE): "This is difficult",
     re.compile(r"\bJust what I needed\b", re.IGNORECASE): "This is not ideal",
     re.compile(r"\bWonderful\b", re.IGNORECASE): "Not ideal",
@@ -175,20 +176,20 @@ _PEOPLE_CONTEXTS: Sequence[tuple[float, str]] = (
 )
 _PEOPLE_THRESHOLDS = [threshold for threshold, _ in _PEOPLE_CONTEXTS]
 _PEOPLE_DESCRIPTIONS = [description for _, description in _PEOPLE_CONTEXTS]
-_TIME_CONTEXTS: Dict[str, str] = {
+_TIME_CONTEXTS: dict[str, str] = {
     "days": "a short planning cycle",
     "weeks": "a typical project sprint",
     "months": "a full quarter of work",
     "years": "a long-term planning window",
 }
-_DATA_CONTEXTS: Dict[str, str] = {
+_DATA_CONTEXTS: dict[str, str] = {
     "mb": "roughly a few high-resolution photos",
     "gb": "roughly a short HD video",
     "tb": "roughly a large enterprise backup",
 }
 
 
-def _safe_sent_tokenize(text: str) -> List[str]:
+def _safe_sent_tokenize(text: str) -> list[str]:
     """Tokenize sentences using NLTK with a regex fallback if punkt is unavailable."""
     if not text.strip():
         return []
@@ -208,7 +209,7 @@ def _sentence_word_count(sentence: str) -> int:
     return len(_WORD_RE.findall(sentence))
 
 
-def _detect_profile(profile: ProfileConfig) -> Optional[Profile]:
+def _detect_profile(profile: ProfileConfig) -> Profile | None:
     """Best-effort detection for built-in profile-specific transforms."""
     for name, config in DEFAULT_PROFILE_CONFIGS.items():
         if profile == config:
@@ -216,12 +217,12 @@ def _detect_profile(profile: ProfileConfig) -> Optional[Profile]:
     return None
 
 
-def _protect_regions(text: str) -> List[tuple[str, bool]]:
+def _protect_regions(text: str) -> list[tuple[str, bool]]:
     """Split text into transformable and protected regions.
 
     Protected regions include fenced code blocks and numbered list blocks.
     """
-    protected_spans: List[tuple[int, int]] = []
+    protected_spans: list[tuple[int, int]] = []
     for pattern in (_FENCED_BLOCK_RE, _NUMBERED_LIST_BLOCK_RE):
         for match in pattern.finditer(text):
             protected_spans.append((match.start(), match.end()))
@@ -230,14 +231,14 @@ def _protect_regions(text: str) -> List[tuple[str, bool]]:
         return [(text, False)]
 
     protected_spans.sort()
-    merged: List[tuple[int, int]] = []
+    merged: list[tuple[int, int]] = []
     for start, end in protected_spans:
         if not merged or start > merged[-1][1]:
             merged.append((start, end))
         else:
             merged[-1] = (merged[-1][0], max(merged[-1][1], end))
 
-    segments: List[tuple[str, bool]] = []
+    segments: list[tuple[str, bool]] = []
     cursor = 0
     for start, end in merged:
         if start > cursor:
@@ -249,10 +250,10 @@ def _protect_regions(text: str) -> List[tuple[str, bool]]:
     return segments
 
 
-def _chunk_sentences(sentences: Sequence[str], chunk_size: int) -> List[str]:
+def _chunk_sentences(sentences: Sequence[str], chunk_size: int) -> list[str]:
     if chunk_size <= 0:
         chunk_size = 1
-    chunks: List[str] = []
+    chunks: list[str] = []
     for index in range(0, len(sentences), chunk_size):
         chunks.append(" ".join(sentences[index : index + chunk_size]).strip())
     return [chunk for chunk in chunks if chunk]
@@ -300,7 +301,7 @@ class Chunker(BaseTransformModule):
             chunk_size = min(chunk_size, 3)
             separator = "\n\n\n"
 
-        output_regions: List[str] = []
+        output_regions: list[str] = []
         for region, is_protected in _protect_regions(text):
             if is_protected:
                 output_regions.append(region)
@@ -328,7 +329,7 @@ class SentenceSimplifier(BaseTransformModule):
         if not text.strip():
             return ""
 
-        transformed_regions: List[str] = []
+        transformed_regions: list[str] = []
         for region, is_protected in _protect_regions(text):
             if is_protected:
                 transformed_regions.append(region)
@@ -339,19 +340,19 @@ class SentenceSimplifier(BaseTransformModule):
                 transformed_regions.append(region)
                 continue
 
-            rebuilt: List[str] = []
+            rebuilt: list[str] = []
             for sentence in sentences:
                 rebuilt.extend(self._simplify_sentence(sentence, profile.max_sentence_words))
             transformed_regions.append(" ".join(part for part in rebuilt if part))
 
         return "".join(transformed_regions).strip()
 
-    def _simplify_sentence(self, sentence: str, max_words: int) -> List[str]:
+    def _simplify_sentence(self, sentence: str, max_words: int) -> list[str]:
         if _sentence_word_count(sentence) <= max_words:
             return [sentence]
 
         pending = [sentence]
-        result: List[str] = []
+        result: list[str] = []
         iterations = 0
         while pending and iterations < 8:
             current = pending.pop(0).strip()
@@ -371,7 +372,7 @@ class SentenceSimplifier(BaseTransformModule):
             result.extend(pending)
         return result
 
-    def _split_once(self, sentence: str) -> List[str]:
+    def _split_once(self, sentence: str) -> list[str]:
         for delimiter in _CONJUNCTION_DELIMITERS:
             parts = self._split_by_delimiter(sentence, delimiter)
             if parts:
@@ -385,7 +386,7 @@ class SentenceSimplifier(BaseTransformModule):
                 return [left_part, right_part]
         return [sentence]
 
-    def _split_by_delimiter(self, sentence: str, delimiter: str) -> Optional[List[str]]:
+    def _split_by_delimiter(self, sentence: str, delimiter: str) -> list[str] | None:
         lower = sentence.lower()
         position = lower.find(delimiter)
         if position == -1:
@@ -430,7 +431,7 @@ class ToneRewriter(BaseTransformModule):
             return ""
 
         detected = _detect_profile(profile)
-        transformed_regions: List[str] = []
+        transformed_regions: list[str] = []
         for region, is_protected in _protect_regions(text):
             if is_protected:
                 transformed_regions.append(region)
@@ -460,7 +461,7 @@ class ToneRewriter(BaseTransformModule):
             updated = pattern.sub(replacement, updated)
 
         paragraphs = updated.split("\n\n")
-        rewritten: List[str] = []
+        rewritten: list[str] = []
         for index, paragraph in enumerate(paragraphs):
             clean = paragraph.strip()
             if not clean:
@@ -498,7 +499,7 @@ class UrgencyFilter(BaseTransformModule):
         if _detect_profile(profile) != Profile.ANXIETY:
             return text
 
-        transformed_regions: List[str] = []
+        transformed_regions: list[str] = []
         for region, is_protected in _protect_regions(text):
             if is_protected:
                 transformed_regions.append(region)
@@ -557,7 +558,7 @@ class NumberContextualiser(BaseTransformModule):
         if _detect_profile(profile) != Profile.DYSCALCULIA:
             return text
 
-        transformed_regions: List[str] = []
+        transformed_regions: list[str] = []
         for region, is_protected in _protect_regions(text):
             if is_protected:
                 transformed_regions.append(region)
@@ -669,7 +670,7 @@ class NumberContextualiser(BaseTransformModule):
         return contexts[-1][1]
 
     @staticmethod
-    def _parse_scaled_number(token: str) -> Optional[float]:
+    def _parse_scaled_number(token: str) -> float | None:
         cleaned = token.lower().replace("$", "").replace("£", "").replace("€", "").replace(",", "")
         cleaned = cleaned.strip()
         multiplier = 1.0
@@ -716,9 +717,9 @@ class PriorityReorderer(BaseTransformModule):
             if len(sentence_units) > 1:
                 paragraphs = sentence_units
 
-        conclusions: List[str] = []
-        backgrounds: List[str] = []
-        examples: List[str] = []
+        conclusions: list[str] = []
+        backgrounds: list[str] = []
+        examples: list[str] = []
 
         for paragraph in paragraphs:
             kind = self._classify_paragraph(paragraph)
@@ -729,7 +730,7 @@ class PriorityReorderer(BaseTransformModule):
             else:
                 backgrounds.append(f"Background: {paragraph}")
 
-        result: List[str] = []
+        result: list[str] = []
         if conclusions:
             result.extend(conclusions)
         else:
@@ -769,7 +770,7 @@ class TransformRun:
     duration_ms: float
     changed: bool = True
     skipped: bool = False
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @dataclass(slots=True)
@@ -777,16 +778,16 @@ class TransformPipeline:
     """Run registered transform modules in sequence for a specific profile configuration."""
 
     profile: ProfileConfig
-    modules: List[BaseTransformModule] = field(default_factory=list)
-    last_run: List[TransformRun] = field(default_factory=list)
+    modules: list[BaseTransformModule] = field(default_factory=list)
+    last_run: list[TransformRun] = field(default_factory=list)
     debug: bool = False
-    debug_callback: Optional[Callable[[str], None]] = None
+    debug_callback: Callable[[str], None] | None = None
     enable_cache: bool = True
     cache_size: int = 256
     cache_hits: int = 0
     cache_misses: int = 0
     cache_evictions: int = 0
-    _cached_transform: Optional[Callable[[str, str, str], str]] = field(
+    _cached_transform: Callable[[str, str, str], str] | None = field(
         default=None, init=False, repr=False
     )
     _profile_name: str = field(default="custom", init=False, repr=False)
@@ -821,7 +822,7 @@ class TransformPipeline:
 
         return _runner
 
-    def cache_stats(self) -> Dict[str, float]:
+    def cache_stats(self) -> dict[str, float]:
         total = self.cache_hits + self.cache_misses
         hit_rate = (self.cache_hits / total) if total else 0.0
         return {

@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import os
-from typing import List
+from dataclasses import dataclass
 
 
 @dataclass(slots=True)
 class ServerConfig:
     """HTTP server settings and middleware behavior."""
 
-    allowed_origins: List[str]
+    allowed_origins: list[str]
     api_prefix: str = "/api/v1"
     require_api_key: bool = False
     api_key: str = ""
@@ -21,7 +20,7 @@ class ServerConfig:
     request_timeout_seconds: int = 30
 
     @classmethod
-    def from_env(cls) -> "ServerConfig":
+    def from_env(cls) -> ServerConfig:
         origins_raw = os.getenv("NEUROBRIDGE_ALLOWED_ORIGINS", "*")
         origins = [item.strip() for item in origins_raw.split(",") if item.strip()]
         if not origins:

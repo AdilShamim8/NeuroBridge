@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
+import sqlite3
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-import hashlib
-import json
 from pathlib import Path
-import sqlite3
 from threading import Lock
-from typing import Any, Dict, List, Optional
+from typing import Any
 from uuid import uuid4
 
 from neurobridge.core.profile import ProfileConfig
@@ -27,7 +27,7 @@ class FeedbackRecord:
     user_edit_hash: str
     timestamp: str
     interaction_id: str
-    delta_analysis: Dict[str, Any]
+    delta_analysis: dict[str, Any]
 
 
 @dataclass(slots=True)
@@ -36,7 +36,7 @@ class ProfileAdjustments:
 
     chunk_size_delta: int = 0
     max_sentence_words_delta: int = 0
-    tone: Optional[str] = None
+    tone: str | None = None
     reason: str = ""
 
 
@@ -48,7 +48,7 @@ class BaseMemoryStore(ABC):
         """Persist profile configuration for a user."""
 
     @abstractmethod
-    def load_profile(self, user_id: str) -> Optional[ProfileConfig]:
+    def load_profile(self, user_id: str) -> ProfileConfig | None:
         """Load profile configuration for a user."""
 
     @abstractmethod
@@ -56,7 +56,7 @@ class BaseMemoryStore(ABC):
         """Persist adaptation feedback for iterative improvements."""
 
     @abstractmethod
-    def get_feedback(self, user_id: str) -> List[FeedbackRecord]:
+    def get_feedback(self, user_id: str) -> list[FeedbackRecord]:
         """Return feedback history for a user."""
 
     @abstractmethod
@@ -76,14 +76,14 @@ class InMemoryStore(BaseMemoryStore):
     """Simple in-memory store for local development and tests."""
 
     def __init__(self) -> None:
-        self._profiles: Dict[str, ProfileConfig] = {}
-        self._feedback: Dict[str, List[FeedbackRecord]] = {}
-        self._interactions: Dict[str, int] = {}
+        self._profiles: dict[str, ProfileConfig] = {}
+        self._feedback: dict[str, list[FeedbackRecord]] = {}
+        self._interactions: dict[str, int] = {}
 
     def save_profile(self, user_id: str, profile: ProfileConfig) -> None:
         self._profiles[user_id] = profile
 
-    def load_profile(self, user_id: str) -> Optional[ProfileConfig]:
+    def load_profile(self, user_id: str) -> ProfileConfig | None:
         return self._profiles.get(user_id)
 
     def save_feedback(self, record: FeedbackRecord) -> None:
@@ -92,7 +92,7 @@ class InMemoryStore(BaseMemoryStore):
             self._feedback[user_id] = []
         self._feedback[user_id].append(record)
 
-    def get_feedback(self, user_id: str) -> List[FeedbackRecord]:
+    def get_feedback(self, user_id: str) -> list[FeedbackRecord]:
         return list(self._feedback.get(user_id, []))
 
     def increment_interaction(self, user_id: str) -> int:
@@ -111,7 +111,7 @@ class InMemoryStore(BaseMemoryStore):
 class SQLiteMemoryStore(BaseMemoryStore):
     """SQLite-backed memory store for persistent profile and feedback learning."""
 
-    def __init__(self, db_path: Optional[str] = None) -> None:
+    def __init__(self, db_path: str | None = None) -> None:
         resolved = Path(db_path or "~/.neurobridge/memory.db").expanduser()
         resolved.parent.mkdir(parents=True, exist_ok=True)
         self._db_path = resolved
@@ -167,7 +167,7 @@ class SQLiteMemoryStore(BaseMemoryStore):
             )
             self._conn.commit()
 
-    def load_profile(self, user_id: str) -> Optional[ProfileConfig]:
+    def load_profile(self, user_id: str) -> ProfileConfig | None:
         with self._lock:
             cursor = self._conn.execute(
                 "SELECT profile_json FROM profiles WHERE user_id = ?", (user_id,)
@@ -204,7 +204,7 @@ class SQLiteMemoryStore(BaseMemoryStore):
             )
             self._conn.commit()
 
-    def get_feedback(self, user_id: str) -> List[FeedbackRecord]:
+    def get_feedback(self, user_id: str) -> list[FeedbackRecord]:
         with self._lock:
             cursor = self._conn.execute(
                 """
@@ -216,7 +216,7 @@ class SQLiteMemoryStore(BaseMemoryStore):
                 (user_id,),
             )
             rows = cursor.fetchall()
-        records: List[FeedbackRecord] = []
+        records: list[FeedbackRecord] = []
         for row in rows:
             records.append(
                 FeedbackRecord(
@@ -273,7 +273,7 @@ class RedisMemoryStore(BaseMemoryStore):
 
     PROFILE_TTL_SECONDS = 90 * 24 * 60 * 60
 
-    def __init__(self, redis_url: str, fallback_store: Optional[InMemoryStore] = None) -> None:
+    def __init__(self, redis_url: str, fallback_store: InMemoryStore | None = None) -> None:
         self._fallback = fallback_store or InMemoryStore()
         self._redis = None
         self._pool = None
@@ -317,7 +317,7 @@ class RedisMemoryStore(BaseMemoryStore):
         except Exception:
             return
 
-    def load_profile(self, user_id: str) -> Optional[ProfileConfig]:
+    def load_profile(self, user_id: str) -> ProfileConfig | None:
         if self._redis is None:
             return self._fallback.load_profile(user_id)
         try:
@@ -343,7 +343,7 @@ class RedisMemoryStore(BaseMemoryStore):
         except Exception:
             return
 
-    def get_feedback(self, user_id: str) -> List[FeedbackRecord]:
+    def get_feedback(self, user_id: str) -> list[FeedbackRecord]:
         if self._redis is None:
             return self._fallback.get_feedback(user_id)
 
@@ -358,7 +358,7 @@ class RedisMemoryStore(BaseMemoryStore):
                 pipe.get(self._feedback_key(user_id, interaction_id))
             raw_values = pipe.execute()
 
-            records: List[FeedbackRecord] = []
+            records: list[FeedbackRecord] = []
             for raw in raw_values:
                 if not raw:
                     continue
@@ -447,7 +447,7 @@ class FeedbackAnalyser:
         chunk_delta = 0
         sentence_delta = 0
         tone = None
-        reason_parts: List[str] = []
+        reason_parts: list[str] = []
 
         if avg_ratio < 0.9 or simplification_votes >= max(2, samples // 3):
             chunk_delta = -1
@@ -487,7 +487,7 @@ def create_feedback_record(
     adapted_urgency = sum(adapted_text.lower().count(token) for token in urgency_terms)
     edited_urgency = sum(user_edit.lower().count(token) for token in urgency_terms)
 
-    delta_analysis: Dict[str, Any] = {
+    delta_analysis: dict[str, Any] = {
         "word_delta": edited_words - adapted_words,
         "length_ratio": edited_words / adapted_words,
         "original_to_adapted_ratio": adapted_words / original_words,

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
@@ -20,7 +19,7 @@ from neurobridge.server.models import (
 router = APIRouter(tags=["adapt"])
 
 
-def _set_profile_if_provided(bridge, profile_name: Optional[str]) -> None:
+def _set_profile_if_provided(bridge, profile_name: str | None) -> None:
     if not profile_name:
         return
     normalized = profile_name.strip().upper()

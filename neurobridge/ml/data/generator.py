@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import random
-from typing import Dict, List, Tuple
+from dataclasses import dataclass
 
 from neurobridge.core.profile import Profile
 
@@ -13,7 +12,7 @@ from neurobridge.core.profile import Profile
 class SyntheticSample:
     """Single synthetic sample with features and profile label."""
 
-    features: List[float]
+    features: list[float]
     label: str
 
 
@@ -26,7 +25,7 @@ def _rand_uniform(rng: random.Random, low: float, high: float) -> float:
     return rng.uniform(low, high)  # nosec B311
 
 
-def _base_noise(rng: random.Random) -> Dict[str, float]:
+def _base_noise(rng: random.Random) -> dict[str, float]:
     return {
         "event_count": _rand_uniform(rng, 20, 60),
         "avg_chunk_dwell_ms": _rand_uniform(rng, 600, 2600),
@@ -46,7 +45,7 @@ def _base_noise(rng: random.Random) -> Dict[str, float]:
     }
 
 
-def _profile_adjustments(profile: Profile, f: Dict[str, float]) -> Dict[str, float]:
+def _profile_adjustments(profile: Profile, f: dict[str, float]) -> dict[str, float]:
     if profile == Profile.ADHD:
         f["avg_chunk_dwell_ms"] *= 0.55
         f["avg_scroll_speed"] *= 1.8
@@ -73,11 +72,11 @@ def _profile_adjustments(profile: Profile, f: Dict[str, float]) -> Dict[str, flo
     return f
 
 
-def generate_synthetic_samples(per_profile: int = 1000, seed: int = 42) -> List[SyntheticSample]:
+def generate_synthetic_samples(per_profile: int = 1000, seed: int = 42) -> list[SyntheticSample]:
     """Generate synthetic profile-labeled training data."""
 
     rng = random.Random(seed)  # nosec B311
-    samples: List[SyntheticSample] = []
+    samples: list[SyntheticSample] = []
 
     profiles = [
         Profile.ADHD,
@@ -112,7 +111,7 @@ def generate_synthetic_samples(per_profile: int = 1000, seed: int = 42) -> List[
     return samples
 
 
-def to_training_matrices(samples: List[SyntheticSample]) -> Tuple[List[List[float]], List[str]]:
+def to_training_matrices(samples: list[SyntheticSample]) -> tuple[list[list[float]], list[str]]:
     """Convert synthetic sample objects to model-training matrices."""
 
     features = [sample.features for sample in samples]

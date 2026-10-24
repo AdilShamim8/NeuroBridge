@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Dict
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -32,7 +31,7 @@ def get_questions() -> QuizQuestionsResponse:
 @router.post("/quiz/submit", response_model=QuizResultResponse)
 def submit_quiz(payload: QuizSubmitRequest, request: Request) -> QuizResultResponse:
     engine = QuizEngine()
-    answers: Dict[str, int] = {}
+    answers: dict[str, int] = {}
     for question in engine.QUESTIONS:
         if question.id not in payload.answers:
             raise HTTPException(status_code=400, detail=f"Missing answer for {question.id}")

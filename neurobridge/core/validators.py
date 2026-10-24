@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable
+from collections.abc import Iterable
 
 MAX_TEXT_LENGTH_DEFAULT = 50_000
 MAX_USER_ID_LENGTH = 128

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import asyncio
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Any
 
 from neurobridge.core.bridge import Config, NeuroBridge
 from neurobridge.core.profile import Profile
@@ -14,7 +14,7 @@ from neurobridge.core.quiz import ProfileQuiz
 class _ChatCompletionsWrapper:
     """Wrap OpenAI chat completions endpoint and adapt returned message content."""
 
-    def __init__(self, target: Any, bridge: NeuroBridge, parent: "_OpenAIWrappedClient") -> None:
+    def __init__(self, target: Any, bridge: NeuroBridge, parent: _OpenAIWrappedClient) -> None:
         self.target = target
         self.bridge = bridge
         self.parent = parent
@@ -43,7 +43,7 @@ class _ChatCompletionsWrapper:
                         return content
         return ""
 
-    def _streaming_chunks(self, message: str, user_id: Optional[str]):
+    def _streaming_chunks(self, message: str, user_id: str | None):
         async_gen = self.bridge.chat_stream(message, user_id=user_id)
         return _BridgeStreamIterator(async_gen)
 
@@ -60,7 +60,7 @@ class _ChatCompletionsWrapper:
             content = getattr(message, "content", None)
             if isinstance(content, str) and content.strip():
                 adapted = self.bridge.adapt(content)
-                setattr(message, "content", adapted)
+                message.content = adapted
             return response
         except Exception:
             return response
@@ -69,7 +69,7 @@ class _ChatCompletionsWrapper:
 class _OpenAIChatWrapper:
     """Wrap OpenAI chat namespace while preserving unknown attributes."""
 
-    def __init__(self, target: Any, bridge: NeuroBridge, parent: "_OpenAIWrappedClient") -> None:
+    def __init__(self, target: Any, bridge: NeuroBridge, parent: _OpenAIWrappedClient) -> None:
         self.target = target
         self.bridge = bridge
         self.parent = parent
@@ -145,7 +145,7 @@ class _BridgeStreamIterator:
         return _StreamingChunk(choices=[_StreamingChoice(delta=_StreamingDelta(content=""))])
 
 
-def wrap(client: Any, profile: Optional[Profile] = None, config: Optional[Config] = None) -> Any:
+def wrap(client: Any, profile: Profile | None = None, config: Config | None = None) -> Any:
     """Return a wrapped OpenAI-compatible client.
 
     If profile is not provided, the first call triggers ProfileQuiz to infer profile.

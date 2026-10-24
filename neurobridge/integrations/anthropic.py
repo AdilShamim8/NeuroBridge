@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from neurobridge.core.bridge import Config, NeuroBridge
 from neurobridge.core.profile import Profile
@@ -10,7 +10,7 @@ from neurobridge.core.quiz import ProfileQuiz
 
 
 class _AnthropicMessagesWrapper:
-    def __init__(self, target: Any, bridge: NeuroBridge, parent: "_AnthropicWrappedClient") -> None:
+    def __init__(self, target: Any, bridge: NeuroBridge, parent: _AnthropicWrappedClient) -> None:
         self.target = target
         self.bridge = bridge
         self.parent = parent
@@ -59,7 +59,7 @@ class _AnthropicWrappedClient:
         return getattr(self.client, name)
 
 
-def wrap(client: Any, profile: Optional[Profile] = None, config: Optional[Config] = None) -> Any:
+def wrap(client: Any, profile: Profile | None = None, config: Config | None = None) -> Any:
     """Wrap an Anthropic client and adapt text in messages.create() responses."""
     bridge = NeuroBridge(llm_client=None, config=config)
     auto_quiz = profile is None

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from neurobridge.core.profile import Profile
 from neurobridge.ml.features import extract_features
@@ -26,7 +26,7 @@ class ProfileDetector:
     def __init__(self, confidence_threshold: float = 0.6) -> None:
         self.confidence_threshold = confidence_threshold
         self._model = None
-        self._load_error: Optional[Exception] = None
+        self._load_error: Exception | None = None
         self._try_load_model()
 
     def _try_load_model(self) -> None:
@@ -36,7 +36,7 @@ class ProfileDetector:
             self._model = None
             self._load_error = exc
 
-    def detect(self, events: List[Dict[str, Any]]) -> ProfileDetectionResult:
+    def detect(self, events: list[dict[str, Any]]) -> ProfileDetectionResult:
         """Detect profile from interaction events with confidence and reasoning."""
 
         if not events:

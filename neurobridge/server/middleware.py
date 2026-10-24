@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
-import time
-from typing import Deque, DefaultDict
 from uuid import uuid4
 
 from fastapi import Request
@@ -101,8 +100,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.per_ip_per_minute = max(1, per_ip_per_minute)
         self.per_key_per_minute = max(1, per_key_per_minute)
-        self._ip_requests: DefaultDict[str, Deque[datetime]] = defaultdict(deque)
-        self._key_requests: DefaultDict[str, Deque[datetime]] = defaultdict(deque)
+        self._ip_requests: defaultdict[str, deque[datetime]] = defaultdict(deque)
+        self._key_requests: defaultdict[str, deque[datetime]] = defaultdict(deque)
 
     async def dispatch(self, request: Request, call_next):  # type: ignore[override]
         ip = request.client.host if request.client else "unknown"

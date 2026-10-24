@@ -20,15 +20,15 @@ def set_debug(enabled: bool) -> None:
 
 
 __all__ = [
-    "NeuroBridge",
-    "Profile",
-    "CustomProfile",
     "Config",
-    "ProfileQuiz",
-    "set_debug",
-    "NeuroBridgeError",
-    "ProfileNotSetError",
+    "CustomProfile",
     "LLMClientError",
-    "TransformError",
     "MemoryBackendError",
+    "NeuroBridge",
+    "NeuroBridgeError",
+    "Profile",
+    "ProfileNotSetError",
+    "ProfileQuiz",
+    "TransformError",
+    "set_debug",
 ]

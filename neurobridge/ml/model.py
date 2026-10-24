@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import List, Sequence, Tuple
 
 import joblib
 from sklearn.ensemble import RandomForestClassifier
@@ -49,7 +49,7 @@ def load_model(path: Path = MODEL_PATH) -> RandomForestClassifier:
 def predict_with_confidence(
     model: RandomForestClassifier,
     features: Sequence[float],
-) -> Tuple[str, float, List[Tuple[str, float]]]:
+) -> tuple[str, float, list[tuple[str, float]]]:
     """Predict profile label with confidence and ranking details."""
 
     probs = model.predict_proba([list(features)])[0]

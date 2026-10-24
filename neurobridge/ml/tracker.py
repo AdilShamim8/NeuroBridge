@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from neurobridge.core.bridge import NeuroBridge
 from neurobridge.core.profile import Profile
@@ -29,7 +29,7 @@ class InteractionEvent:
 
     user_id: str
     event_type: str
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
     timestamp: str
 
 
@@ -41,14 +41,14 @@ class InteractionTracker:
     detector: ProfileDetector = field(default_factory=ProfileDetector)
     detect_after_events: int = 20
     update_threshold: float = 0.7
-    _events_by_user: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
+    _events_by_user: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
 
     def record(
         self,
         user_id: str,
         event_type: str,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Optional[ProfileDetectionResult]:
+        metadata: dict[str, Any] | None = None,
+    ) -> ProfileDetectionResult | None:
         """Record event and trigger profile update when threshold is reached."""
 
         if event_type not in _ALLOWED_EVENT_TYPES:
@@ -80,7 +80,7 @@ class InteractionTracker:
             if self.bridge.memory_store is not None:
                 self.bridge.memory_store.save_profile(
                     user_id, self.bridge._profile_config
-                )  # noqa: SLF001
+                )
 
         return result
 
@@ -91,10 +91,10 @@ class InteractionTracker:
             return
         self.bridge.set_profile(profile)
 
-    def _load_events(self, user_id: str) -> List[Dict[str, Any]]:
+    def _load_events(self, user_id: str) -> list[dict[str, Any]]:
         return list(self._events_by_user.get(user_id, []))
 
-    def _save_events(self, user_id: str, events: List[Dict[str, Any]]) -> None:
+    def _save_events(self, user_id: str, events: list[dict[str, Any]]) -> None:
         self._events_by_user[user_id] = list(events)
 
         if self.bridge.memory_store is None:
@@ -104,5 +104,5 @@ class InteractionTracker:
         data = getattr(store, "_interaction_cache", None)
         if not isinstance(data, dict):
             data = {}
-            setattr(store, "_interaction_cache", data)
+            store._interaction_cache = data
         data[key] = list(events)

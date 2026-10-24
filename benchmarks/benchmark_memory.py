@@ -8,7 +8,7 @@ from neurobridge.core.memory import InMemoryStore, RedisMemoryStore, create_feed
 from neurobridge.core.profile import DEFAULT_PROFILE_CONFIGS, Profile
 
 
-def _run_store(name: str, store, loops: int = 1000) -> None:  # noqa: ANN001
+def _run_store(name: str, store, loops: int = 1000) -> None:
     profile = DEFAULT_PROFILE_CONFIGS[Profile.ADHD]
     user_id = f"{name}-user"
 

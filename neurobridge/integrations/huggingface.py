@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from neurobridge.core.bridge import AdaptedResponse, Config, NeuroBridge
 from neurobridge.core.profile import Profile
@@ -13,7 +13,7 @@ class NeuroBridgePipeline:
     """Wrap a HuggingFace pipeline-like callable and adapt generated text."""
 
     def __init__(
-        self, pipeline_obj: Any, profile: Profile = Profile.ADHD, config: Optional[Config] = None
+        self, pipeline_obj: Any, profile: Profile = Profile.ADHD, config: Config | None = None
     ) -> None:
         self.pipeline_obj = pipeline_obj
         self.bridge = NeuroBridge(config=config)
@@ -25,7 +25,7 @@ class NeuroBridgePipeline:
 
     def _adapt_pipeline_output(self, output: Any) -> Any:
         if isinstance(output, list):
-            adapted_items: List[Any] = []
+            adapted_items: list[Any] = []
             for item in output:
                 if isinstance(item, dict) and isinstance(item.get("generated_text"), str):
                     mutated = dict(item)
@@ -53,7 +53,7 @@ class NeuroBridgeTransformersAdapter:
     model: Any
     tokenizer: Any
     profile: Profile = Profile.ADHD
-    config: Optional[Config] = None
+    config: Config | None = None
 
     def __post_init__(self) -> None:
         self.bridge = NeuroBridge(config=self.config)
@@ -63,7 +63,7 @@ class NeuroBridgeTransformersAdapter:
         self, prompt: str, max_new_tokens: int = 512, **generation_kwargs: Any
     ) -> AdaptedResponse:
         tokenized = self.tokenizer(prompt, return_tensors="pt")
-        kwargs: Dict[str, Any] = {"max_new_tokens": max_new_tokens}
+        kwargs: dict[str, Any] = {"max_new_tokens": max_new_tokens}
         kwargs.update(generation_kwargs)
         generated = self.model.generate(**tokenized, **kwargs)
 
@@ -74,7 +74,7 @@ class NeuroBridgeTransformersAdapter:
             adapted_text=adapted,
             profile=self.bridge.profile,
             interaction_id="hf-generate",
-            modules_run=[entry.module for entry in self.bridge._pipeline.last_run],  # noqa: SLF001
+            modules_run=[entry.module for entry in self.bridge._pipeline.last_run],
             processing_ms=0.0,
             metadata={"provider": "huggingface", "max_new_tokens": max_new_tokens},
         )

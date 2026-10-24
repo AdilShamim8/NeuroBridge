@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
 import importlib.util
 import sys
-from typing import Any, Dict, Optional
+from dataclasses import asdict
+from typing import Any
 
 import typer
 from rich.columns import Columns
@@ -38,7 +38,7 @@ def _parse_profile(name: str) -> Profile:
         raise typer.BadParameter(f"Unsupported profile: {name}") from exc
 
 
-def _format_yaml(data: Dict[str, Any], indent: int = 0) -> str:
+def _format_yaml(data: dict[str, Any], indent: int = 0) -> str:
     lines = []
     prefix = "  " * indent
     for key, value in data.items():
@@ -93,7 +93,7 @@ def serve(
 
 @app.command("quiz")
 def quiz(
-    user_id: Optional[str] = typer.Option(
+    user_id: str | None = typer.Option(
         None, "--user-id", help="Optional user id for persistence"
     ),
     save: bool = typer.Option(False, "--save", help="Persist recommended config for user_id"),
@@ -127,12 +127,12 @@ def quiz(
 
 @app.command("adapt")
 def adapt(
-    text: Optional[str] = typer.Argument(None, help="Input text (or pipe via stdin)"),
+    text: str | None = typer.Argument(None, help="Input text (or pipe via stdin)"),
     profile: str = typer.Option(
         "adhd", "--profile", help="adhd|autism|dyslexia|anxiety|dyscalculia"
     ),
     fmt: str = typer.Option("markdown", "--format", help="markdown|html|plain|json|tts"),
-    user_id: Optional[str] = typer.Option(None, "--user-id", help="Optional user id"),
+    user_id: str | None = typer.Option(None, "--user-id", help="Optional user id"),
     debug: bool = typer.Option(False, "--debug", help="Enable debug output"),
 ) -> None:
     """Adapt text from argument or stdin and print formatted output."""
@@ -158,7 +158,7 @@ def adapt(
     }
     if fmt not in adapter_map:
         raise typer.BadParameter(f"Unsupported format: {fmt}")
-    rendered = adapter_map[fmt].format(result.adapted_text, bridge._profile_config)  # noqa: SLF001
+    rendered = adapter_map[fmt].format(result.adapted_text, bridge._profile_config)
 
     if console.width >= 120 and fmt == "markdown":
         left = Panel(source_text, title="Original", border_style="dim")
@@ -186,7 +186,7 @@ def profile_set(user_id: str, profile: str = typer.Option(..., "--profile")) -> 
     bridge.set_profile(parsed)
     if bridge.memory_store is None:
         raise typer.BadParameter("No memory backend configured")
-    bridge.memory_store.save_profile(user_id, bridge._profile_config)  # noqa: SLF001
+    bridge.memory_store.save_profile(user_id, bridge._profile_config)
     console.print(f"Saved profile [bold]{parsed.value}[/bold] for [bold]{user_id}[/bold].")
 
 

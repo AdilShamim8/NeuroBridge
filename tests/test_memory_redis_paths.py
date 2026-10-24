@@ -101,8 +101,8 @@ class _FakePool:
 def test_redis_store_happy_path_with_fake_client() -> None:
     store = RedisMemoryStore("redis://localhost:1", fallback_store=InMemoryStore())
     fake = _FakeRedis()
-    store._redis = fake  # noqa: SLF001
-    store._pool = _FakePool()  # noqa: SLF001
+    store._redis = fake
+    store._pool = _FakePool()
 
     profile = get_profile_config(Profile.ADHD)
     store.save_profile("u1", profile)
@@ -123,7 +123,7 @@ def test_redis_store_happy_path_with_fake_client() -> None:
     assert store.load_profile("u1") is None
 
     store.close()
-    assert store._pool.disconnected is True  # type: ignore[union-attr]  # noqa: SLF001
+    assert store._pool.disconnected is True  # type: ignore[union-attr]
 
 
 def test_redis_store_gracefully_handles_backend_failures() -> None:
@@ -132,8 +132,8 @@ def test_redis_store_gracefully_handles_backend_failures() -> None:
     profile = get_profile_config(Profile.DYSLEXIA)
     fallback.save_profile("u2", profile)
 
-    store._redis = _FakeRedis(fail_pipeline=True, fail_get=True)  # noqa: SLF001
-    store._pool = _FakePool(fail_disconnect=True)  # noqa: SLF001
+    store._redis = _FakeRedis(fail_pipeline=True, fail_get=True)
+    store._pool = _FakePool(fail_disconnect=True)
 
     store.save_profile("u2", profile)
     loaded = store.load_profile("u2")

@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-from typing import Optional
 
 from fastapi.testclient import TestClient
 
@@ -13,7 +12,7 @@ from neurobridge.server.app import create_app
 from neurobridge.server.config import ServerConfig
 
 
-async def _collect_stream(bridge: NeuroBridge, message: str, user_id: Optional[str] = None):
+async def _collect_stream(bridge: NeuroBridge, message: str, user_id: str | None = None):
     chunks = []
     final = None
     async for item in bridge.chat_stream(message, user_id=user_id):
@@ -77,7 +76,7 @@ def test_sse_stream_endpoint_format(tmp_path) -> None:
 
 
 class _MockOpenAICompletions:
-    def create(self, *args, **kwargs):  # noqa: ANN002, ANN003
+    def create(self, *args, **kwargs):
         _ = args, kwargs
         return []
 

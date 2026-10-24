@@ -37,7 +37,7 @@ class _OpenAIResponse:
 
 
 class _MockOpenAICompletions:
-    def create(self, *args, **kwargs):  # noqa: ANN002, ANN003
+    def create(self, *args, **kwargs):
         _ = args, kwargs
         with VCR.use_cassette("openai_chat.yaml"):
             payload = requests.get("https://api.openai.mock/v1/chat/completions", timeout=3).json()
@@ -66,7 +66,7 @@ class _AnthropicResponse:
 
 
 class _MockAnthropicMessages:
-    def create(self, *args, **kwargs):  # noqa: ANN002, ANN003
+    def create(self, *args, **kwargs):
         _ = args, kwargs
         with VCR.use_cassette("anthropic_messages.yaml"):
             payload = requests.get("https://api.anthropic.mock/v1/messages", timeout=3).json()

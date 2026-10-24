@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import re
 
-from hypothesis import assume, given, settings, strategies as st
+from hypothesis import assume, given, settings
+from hypothesis import strategies as st
 
 from neurobridge import NeuroBridge, Profile
 from neurobridge.core.profile import get_profile_config

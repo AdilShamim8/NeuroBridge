@@ -14,13 +14,13 @@ from neurobridge.core.profile import get_profile_config
 
 
 class _SyncStreamingClient:
-    def chat_stream(self, message: str, **kwargs):  # noqa: ANN003
+    def chat_stream(self, message: str, **kwargs):
         _ = message, kwargs
         return ["Hello ", "world."]
 
 
 class _BadStreamingClient:
-    def chat_stream(self, message: str, **kwargs):  # noqa: ANN003
+    def chat_stream(self, message: str, **kwargs):
         _ = message, kwargs
         raise RuntimeError("stream failed")
 
@@ -44,11 +44,11 @@ def test_set_debug_updates_pipeline_flags() -> None:
     bridge = NeuroBridge(config=Config(memory_backend="none"))
     bridge.set_debug(True)
     assert bridge.config.debug is True
-    assert bridge._pipeline.debug is True  # noqa: SLF001
+    assert bridge._pipeline.debug is True
 
     bridge.set_debug(False)
-    assert bridge._pipeline.debug is False  # noqa: SLF001
-    assert bridge._pipeline.debug_callback is None  # noqa: SLF001
+    assert bridge._pipeline.debug is False
+    assert bridge._pipeline.debug_callback is None
 
 
 def test_build_memory_store_invalid_backend_raises() -> None:
@@ -60,7 +60,7 @@ def test_build_memory_store_invalid_backend_raises() -> None:
         redis_url = "redis://localhost:6379/0"
 
     with pytest.raises(ValueError):
-        bridge._build_memory_store(_BadConfig())  # type: ignore[arg-type]  # noqa: SLF001
+        bridge._build_memory_store(_BadConfig())  # type: ignore[arg-type]
 
 
 def test_export_and_delete_user_data_with_none_store() -> None:
@@ -74,7 +74,7 @@ def test_export_and_delete_user_data_with_none_store() -> None:
 def test_export_delete_and_feedback_with_inmemory_store() -> None:
     bridge = NeuroBridge(config=Config(memory_backend="none"))
     store = InMemoryStore()
-    bridge._memory_store = store  # noqa: SLF001
+    bridge._memory_store = store
 
     profile = get_profile_config(Profile.ADHD)
     store.save_profile("u1", profile)
@@ -114,13 +114,13 @@ def test_chat_stream_wraps_chat_stream_errors() -> None:
 
 
 def test_tokenize_stream_input_edge_cases() -> None:
-    assert list(NeuroBridge._tokenize_stream_input("word one"))  # noqa: SLF001
-    assert list(NeuroBridge._tokenize_stream_input("")) == []  # noqa: SLF001
+    assert list(NeuroBridge._tokenize_stream_input("word one"))
+    assert list(NeuroBridge._tokenize_stream_input("")) == []
 
 
 def test_aenter_aexit_and_close_with_store() -> None:
     bridge = NeuroBridge(config=Config(memory_backend="none"))
-    bridge._memory_store = InMemoryStore()  # noqa: SLF001
+    bridge._memory_store = InMemoryStore()
 
     async def _ctx_run() -> None:
         async with bridge as entered:
@@ -133,11 +133,11 @@ def test_aenter_aexit_and_close_with_store() -> None:
 def test_apply_adjustments_keeps_minimum_bounds() -> None:
     bridge = NeuroBridge(config=Config(memory_backend="none"))
     bridge.set_profile(Profile.ADHD)
-    bridge._apply_adjustments(  # noqa: SLF001
+    bridge._apply_adjustments(
         ProfileAdjustments(chunk_size_delta=-100, max_sentence_words_delta=-100, tone=None)
     )
-    assert bridge._profile_config.chunk_size >= 1  # noqa: SLF001
-    assert bridge._profile_config.max_sentence_words >= 6  # noqa: SLF001
+    assert bridge._profile_config.chunk_size >= 1
+    assert bridge._profile_config.max_sentence_words >= 6
 
 
 def test_iterate_source_chunks_falls_back_for_client_without_chat_methods() -> None:
@@ -145,7 +145,7 @@ def test_iterate_source_chunks_falls_back_for_client_without_chat_methods() -> N
 
     async def _run() -> list[str]:
         items = []
-        async for token in bridge._iterate_source_chunks("alpha beta"):  # noqa: SLF001
+        async for token in bridge._iterate_source_chunks("alpha beta"):
             items.append(token)
         return items
 
@@ -175,7 +175,7 @@ def test_debug_log_falls_back_to_print_if_rich_is_unavailable(monkeypatch, capsy
         return original_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", _fake_import)
-    bridge._debug_log("fallback message")  # noqa: SLF001
+    bridge._debug_log("fallback message")
 
     output = capsys.readouterr().out
     assert "fallback message" in output
@@ -184,7 +184,7 @@ def test_debug_log_falls_back_to_print_if_rich_is_unavailable(monkeypatch, capsy
 def test_debug_log_uses_rich_when_available() -> None:
     bridge = NeuroBridge(config=Config(memory_backend="none", debug=True))
     # Smoke-test rich branch in _debug_log; this should not raise.
-    bridge._debug_log("rich message")  # noqa: SLF001
+    bridge._debug_log("rich message")
 
 
 def test_extract_chunk_text_from_choices_and_text_object() -> None:
@@ -200,5 +200,5 @@ def test_extract_chunk_text_from_choices_and_text_object() -> None:
     class _WithText:
         text = "from-text"
 
-    assert NeuroBridge._extract_chunk_text(_WithChoices()) == "from-delta"  # noqa: SLF001
-    assert NeuroBridge._extract_chunk_text(_WithText()) == "from-text"  # noqa: SLF001
+    assert NeuroBridge._extract_chunk_text(_WithChoices()) == "from-delta"
+    assert NeuroBridge._extract_chunk_text(_WithText()) == "from-text"

@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
-from typing import Dict, Optional, Tuple
+from dataclasses import dataclass
 
 from neurobridge.core.profile import Profile, ProfileConfig, get_profile_config
 
@@ -14,7 +13,7 @@ class QuizOption:
     """An answer option with weighted score deltas per profile."""
 
     text: str
-    scores: Dict[str, float]
+    scores: dict[str, float]
 
 
 @dataclass(frozen=True)
@@ -23,7 +22,7 @@ class QuizQuestion:
 
     id: str
     prompt: str
-    options: Tuple[QuizOption, ...]
+    options: tuple[QuizOption, ...]
     weight: float
 
 
@@ -32,9 +31,9 @@ class QuizResult:
     """Final quiz output with primary and optional secondary profile."""
 
     primary_profile: Profile
-    secondary_profile: Optional[Profile]
+    secondary_profile: Profile | None
     confidence: float
-    scores: Dict[str, float]
+    scores: dict[str, float]
     recommended_config: ProfileConfig
 
 
@@ -70,7 +69,7 @@ class ProfileBlender:
 class QuizEngine:
     """Interactive and programmatic quiz engine for profile inference."""
 
-    QUESTIONS: Tuple[QuizQuestion, ...] = (
+    QUESTIONS: tuple[QuizQuestion, ...] = (
         QuizQuestion(
             id="q1",
             prompt="Long walls of text without breaks make me feel...",
@@ -230,14 +229,14 @@ class QuizEngine:
         print("NeuroBridge Profile Quiz")
         print("Answer each question by entering the option number.\n")
 
-        answers: Dict[str, int] = {}
+        answers: dict[str, int] = {}
         for index, question in enumerate(self.QUESTIONS, start=1):
             print(f"Q{index}. {question.prompt}")
             for option_index, option in enumerate(question.options, start=1):
                 print(f"  {option_index}. {option.text}")
             selected = self._prompt_option(len(question.options))
             answers[question.id] = selected
-            print("")
+            print()
 
         result = self.score_answers(answers)
         print(f"Primary profile: {result.primary_profile.value}")
@@ -262,7 +261,7 @@ class QuizEngine:
         if not isinstance(answers, dict):
             raise ValueError("JSON payload must contain an 'answers' object")
 
-        normalized: Dict[str, int] = {}
+        normalized: dict[str, int] = {}
         for question in self.QUESTIONS:
             if question.id not in answers:
                 raise ValueError(f"Missing answer for question: {question.id}")
@@ -272,9 +271,9 @@ class QuizEngine:
             normalized[question.id] = raw_index
         return self.score_answers(normalized)
 
-    def score_answers(self, answers: Dict[str, int]) -> QuizResult:
+    def score_answers(self, answers: dict[str, int]) -> QuizResult:
         """Score answer indices and compute primary/secondary profile recommendation."""
-        score_map: Dict[str, float] = {
+        score_map: dict[str, float] = {
             Profile.ADHD.name: 0.0,
             Profile.AUTISM.name: 0.0,
             Profile.DYSLEXIA.name: 0.0,
@@ -299,7 +298,7 @@ class QuizEngine:
         secondary_name, secondary_score = ranked[1]
 
         primary_profile = Profile[primary_name]
-        secondary_profile: Optional[Profile] = None
+        secondary_profile: Profile | None = None
         if primary_score > 0 and secondary_score / primary_score >= 0.7:
             secondary_profile = Profile[secondary_name]
 
@@ -335,7 +334,7 @@ class ProfileQuiz:
     """Public quiz facade used by package-level imports."""
 
     @staticmethod
-    def run(user_id: Optional[str] = None) -> Profile:
+    def run(user_id: str | None = None) -> Profile:
         """Run the CLI quiz and return the detected primary profile."""
         _ = user_id
         return QuizEngine().run_cli().primary_profile

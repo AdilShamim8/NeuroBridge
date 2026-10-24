@@ -15,7 +15,7 @@ def test_text_utils_behaviour() -> None:
 
 
 class _AdapterImpl(BaseLLMAdapter):
-    def chat(self, message: str, **kwargs):  # noqa: ANN003
+    def chat(self, message: str, **kwargs):
         _ = kwargs
         return f"echo:{message}"
 
@@ -26,7 +26,7 @@ def test_base_adapter_contract_via_subclass() -> None:
 
 
 class _DemoPipeline:
-    def __call__(self, inputs, **kwargs):  # noqa: ANN001, ANN003
+    def __call__(self, inputs, **kwargs):
         _ = kwargs
         if isinstance(inputs, str):
             return [{"generated_text": f"This is critical and must be done ASAP. {inputs}"}]
@@ -52,13 +52,13 @@ class _MockTokenizer:
         _ = return_tensors
         return {"input_ids": [prompt]}
 
-    def decode(self, item, skip_special_tokens: bool = True):  # noqa: ANN001
+    def decode(self, item, skip_special_tokens: bool = True):
         _ = skip_special_tokens
         return str(item)
 
 
 class _MockModel:
-    def generate(self, **kwargs):  # noqa: ANN003
+    def generate(self, **kwargs):
         prompt = kwargs.get("input_ids", ["sample"])[0]
         return [[f"This is critical and you must respond ASAP. {prompt}"]]
 

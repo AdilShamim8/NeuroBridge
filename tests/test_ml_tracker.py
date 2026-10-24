@@ -71,7 +71,7 @@ def test_tracker_set_profile_ignores_invalid_label() -> None:
     tracker = InteractionTracker(bridge=bridge, detector=_StubDetector(), detect_after_events=1)
 
     original_profile = bridge.profile
-    tracker._set_profile_from_label("not-a-profile")  # noqa: SLF001
+    tracker._set_profile_from_label("not-a-profile")
 
     assert bridge.profile == original_profile
 
@@ -82,12 +82,12 @@ def test_tracker_saves_interaction_cache_on_memory_store() -> None:
             _ = (user_id, profile)
 
     bridge = NeuroBridge(config=Config(memory_backend="none"))
-    bridge._memory_store = _Store()  # type: ignore[assignment]  # noqa: SLF001
+    bridge._memory_store = _Store()  # type: ignore[assignment]
     tracker = InteractionTracker(bridge=bridge, detector=_StubDetector(), detect_after_events=99)
 
     tracker.record("u3", "feedback_positive", {})
 
     assert hasattr(bridge.memory_store, "_interaction_cache")
-    cache = getattr(bridge.memory_store, "_interaction_cache")
+    cache = bridge.memory_store._interaction_cache
     assert "_events:u3" in cache
     assert len(cache["_events:u3"]) == 1

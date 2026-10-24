@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict
 
 from neurobridge.core.validators import validate_profile_config_ranges
 
@@ -46,7 +45,7 @@ class CustomProfile(ProfileConfig):
     """User-defined profile for bespoke adaptation behavior."""
 
 
-DEFAULT_PROFILE_CONFIGS: Dict[Profile, ProfileConfig] = {
+DEFAULT_PROFILE_CONFIGS: dict[Profile, ProfileConfig] = {
     Profile.ADHD: ProfileConfig(
         chunk_size=3,
         tone="clear",

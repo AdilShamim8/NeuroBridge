@@ -3,25 +3,18 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import asdict, dataclass
 import os
 import re
+from collections.abc import AsyncGenerator, AsyncIterator, Iterable
+from dataclasses import asdict, dataclass
 from time import perf_counter
 from typing import (
     Any,
-    AsyncGenerator,
-    AsyncIterator,
-    Dict,
-    Iterable,
-    List,
     Literal,
-    Optional,
-    Union,
     cast,
 )
 from uuid import uuid4
 
-from neurobridge.exceptions import LLMClientError, MemoryBackendError, ProfileNotSetError
 from neurobridge.core.memory import (
     BaseMemoryStore,
     FeedbackAnalyser,
@@ -34,6 +27,7 @@ from neurobridge.core.profile import CustomProfile, Profile, ProfileConfig, get_
 from neurobridge.core.quiz import QuizResult
 from neurobridge.core.transform import TransformPipeline
 from neurobridge.core.validators import validate_text_input, validate_user_id
+from neurobridge.exceptions import LLMClientError, MemoryBackendError, ProfileNotSetError
 
 _SENTENCE_END_RE = re.compile(r"([.!?])")
 _INCOMPLETE_NUMBER_TAIL_RE = re.compile(r"(?:\$|£|€)?\d[\d,]*\.?$")
@@ -55,7 +49,7 @@ class Config:
     max_text_length: int = 50_000
 
     @classmethod
-    def from_env(cls) -> "Config":
+    def from_env(cls) -> Config:
         """Build runtime configuration from NEUROBRIDGE_* environment variables."""
 
         def to_bool(raw: str, default: bool) -> bool:
@@ -106,20 +100,20 @@ class AdaptedResponse:
 
     raw_text: str
     adapted_text: str
-    profile: Union[Profile, str]
+    profile: Profile | str
     interaction_id: str
-    modules_run: List[str]
+    modules_run: list[str]
     processing_ms: float
-    metadata: Dict[str, Any]
+    metadata: dict[str, Any]
 
 
 class NeuroBridge:
     """Adapts LLM output to fit cognitive profile preferences."""
 
-    def __init__(self, llm_client: Any = None, config: Optional[Config] = None) -> None:
+    def __init__(self, llm_client: Any = None, config: Config | None = None) -> None:
         self.llm_client = llm_client
         self.config = config or Config.from_env()
-        self._active_profile: Union[Profile, str] = Profile.ADHD
+        self._active_profile: Profile | str = Profile.ADHD
         self._profile_config: ProfileConfig = get_profile_config(Profile.ADHD)
         self._profile_explicit = True
         self._pipeline = TransformPipeline(
@@ -143,7 +137,7 @@ class NeuroBridge:
             print(f"[NeuroBridge debug] {message}")
 
     @property
-    def memory_store(self) -> Optional[BaseMemoryStore]:
+    def memory_store(self) -> BaseMemoryStore | None:
         """Return configured memory backend, if available."""
         return self._memory_store
 
@@ -153,7 +147,7 @@ class NeuroBridge:
         self._pipeline.debug = self.config.debug
         self._pipeline.debug_callback = self._debug_log if self.config.debug else None
 
-    def _build_memory_store(self, config: Config) -> Optional[BaseMemoryStore]:
+    def _build_memory_store(self, config: Config) -> BaseMemoryStore | None:
         if config.memory_backend == "none":
             return None
         if config.memory_backend == "sqlite":
@@ -166,11 +160,11 @@ class NeuroBridge:
         raise ValueError(f"Unsupported memory backend: {config.memory_backend}")
 
     @property
-    def profile(self) -> Union[Profile, str]:
+    def profile(self) -> Profile | str:
         """Return the active profile identifier."""
         return self._active_profile
 
-    def set_profile(self, profile: Union[Profile, CustomProfile, QuizResult]) -> None:
+    def set_profile(self, profile: Profile | CustomProfile | QuizResult) -> None:
         """Set active profile from built-in or custom configuration."""
         if isinstance(profile, QuizResult):
             self._active_profile = profile.primary_profile
@@ -205,11 +199,11 @@ class NeuroBridge:
         """Async wrapper for adapt() to support concurrent adaptation workloads."""
         return await asyncio.to_thread(self.adapt, text)
 
-    def cache_stats(self) -> Dict[str, float]:
+    def cache_stats(self) -> dict[str, float]:
         """Expose pipeline cache statistics for observability and tuning."""
         return self._pipeline.cache_stats()
 
-    def chat(self, message: str, user_id: Optional[str] = None, **kwargs: Any) -> AdaptedResponse:
+    def chat(self, message: str, user_id: str | None = None, **kwargs: Any) -> AdaptedResponse:
         """Return an adapted response.
 
         Day 1 uses a safe scaffold implementation:
@@ -285,7 +279,7 @@ class NeuroBridge:
     async def achat(
         self,
         message: str,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
         **kwargs: Any,
     ) -> AdaptedResponse:
         """Async wrapper for chat() enabling parallel request handling."""
@@ -324,7 +318,7 @@ class NeuroBridge:
             return
         self._memory_store.clear_user_data(user_id)
 
-    def export_user_data(self, user_id: str) -> Dict[str, Any]:
+    def export_user_data(self, user_id: str) -> dict[str, Any]:
         """Export all stored profile and feedback data for a user."""
         validate_user_id(user_id)
         if self._memory_store is None:
@@ -365,9 +359,9 @@ class NeuroBridge:
     async def chat_stream(
         self,
         message: str,
-        user_id: Optional[str] = None,
+        user_id: str | None = None,
         **kwargs: Any,
-    ) -> AsyncGenerator[Union[str, AdaptedResponse], None]:
+    ) -> AsyncGenerator[str | AdaptedResponse, None]:
         """Yield adapted chunks as sentence boundaries are reached, then final response."""
         validate_text_input(message, max_length=self.config.max_text_length, field="message")
         if not message.strip():
@@ -386,10 +380,10 @@ class NeuroBridge:
                     debug_callback=self._debug_log,
                 )
 
-        raw_collected: List[str] = []
-        adapted_collected: List[str] = []
+        raw_collected: list[str] = []
+        adapted_collected: list[str] = []
         sentence_buffer = ""
-        chunk_sentences: List[str] = []
+        chunk_sentences: list[str] = []
         start = perf_counter()
 
         async for incoming in self._iterate_source_chunks(message=message, **kwargs):
@@ -466,7 +460,7 @@ class NeuroBridge:
         """Async wrapper for close()."""
         await asyncio.to_thread(self.close)
 
-    async def __aenter__(self) -> "NeuroBridge":
+    async def __aenter__(self) -> NeuroBridge:
         return self
 
     async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
@@ -530,9 +524,9 @@ class NeuroBridge:
         return tokens
 
     @staticmethod
-    def _extract_complete_sentences(buffer: str) -> tuple[List[str], str]:
+    def _extract_complete_sentences(buffer: str) -> tuple[list[str], str]:
         parts = _SENTENCE_END_RE.split(buffer)
-        sentences: List[str] = []
+        sentences: list[str] = []
         current = ""
         for index, part in enumerate(parts):
             if index % 2 == 0:
@@ -549,7 +543,7 @@ class NeuroBridge:
     def _has_incomplete_numeric_tail(sentence: str) -> bool:
         return bool(_INCOMPLETE_NUMBER_TAIL_RE.search(sentence.strip()))
 
-    def _adapt_stream_chunk(self, sentences: List[str]) -> str:
+    def _adapt_stream_chunk(self, sentences: list[str]) -> str:
         text = " ".join(s.strip() for s in sentences if s.strip())
         if not text:
             return ""
@@ -563,8 +557,8 @@ class NeuroBridge:
             output = module.apply(output, self._profile_config)
         return output.strip()
 
-    def _stream_modules_run(self) -> List[str]:
-        names: List[str] = []
+    def _stream_modules_run(self) -> list[str]:
+        names: list[str] = []
         for module in self._pipeline.modules:
             if not getattr(module, "enabled", True):
                 continue

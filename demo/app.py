@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 import json
+from collections.abc import Sequence
+from pathlib import Path
 from time import perf_counter
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any
 
 import gradio as gr
 
@@ -14,7 +15,7 @@ from neurobridge.core.quiz import QuizEngine
 
 TITLE = "NeuroBridge - Try Cognitive Accessibility for AI"
 
-PROFILE_LABELS: Dict[str, Profile] = {
+PROFILE_LABELS: dict[str, Profile] = {
     "ADHD": Profile.ADHD,
     "Autism": Profile.AUTISM,
     "Dyslexia": Profile.DYSLEXIA,
@@ -33,7 +34,7 @@ def _read_showcase_text(name: str) -> str:
     return ""
 
 
-def _build_examples() -> List[List[str]]:
+def _build_examples() -> list[list[str]]:
     return [
         [_read_showcase_text("original_adhd.txt"), "ADHD", "Markdown"],
         [_read_showcase_text("original_autism.txt"), "Autism", "Markdown"],
@@ -43,7 +44,7 @@ def _build_examples() -> List[List[str]]:
     ]
 
 
-def adapt_text(text: str, profile_label: str, output_format: str) -> Tuple[str, Dict[str, Any]]:
+def adapt_text(text: str, profile_label: str, output_format: str) -> tuple[str, dict[str, Any]]:
     if not text or not text.strip():
         return "Please paste text before adapting.", {
             "transforms_applied": [],
@@ -102,14 +103,14 @@ def code_for_profile(profile_label: str) -> str:
     return _code_template(profile_label)
 
 
-def _quiz_option_choices(question_index: int, engine: QuizEngine) -> List[str]:
+def _quiz_option_choices(question_index: int, engine: QuizEngine) -> list[str]:
     question = engine.QUESTIONS[question_index]
     return [option.text for option in question.options]
 
 
-def score_quiz(*selected_texts: str) -> Tuple[str, List[Tuple[str, str]]]:
+def score_quiz(*selected_texts: str) -> tuple[str, list[tuple[str, str]]]:
     engine = QuizEngine()
-    answers: Dict[str, int] = {}
+    answers: dict[str, int] = {}
 
     for i, question in enumerate(engine.QUESTIONS):
         selected = selected_texts[i] if i < len(selected_texts) else None
@@ -148,7 +149,7 @@ def score_quiz(*selected_texts: str) -> Tuple[str, List[Tuple[str, str]]]:
 
 
 def build_quiz_components(engine: QuizEngine) -> Sequence[gr.Radio]:
-    radios: List[gr.Radio] = []
+    radios: list[gr.Radio] = []
     for index, question in enumerate(engine.QUESTIONS):
         radios.append(
             gr.Radio(

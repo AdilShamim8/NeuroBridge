@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Iterable
+from collections.abc import Iterable
 
 _WORD_RE = re.compile(r"\b\w+\b", re.UNICODE)
 

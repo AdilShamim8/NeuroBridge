@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, List
+from typing import Any
 
 
 @dataclass(frozen=True)
 class FeatureVector:
     """Normalized feature vector used by the ML classifier."""
 
-    values: List[float]
-    names: List[str]
+    values: list[float]
+    names: list[str]
 
 
 FEATURE_NAMES = [
@@ -39,7 +40,7 @@ def _safe_div(numerator: float, denominator: float) -> float:
     return numerator / denominator
 
 
-def extract_features(events: Iterable[Dict[str, Any]]) -> FeatureVector:
+def extract_features(events: Iterable[dict[str, Any]]) -> FeatureVector:
     """Extract 15 profile-detection signals from interaction events."""
 
     items = list(events)
