@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from neurobridge.core.profile import Profile, get_profile_config
 from neurobridge.core.transform import TransformPipeline
-from neurobridge.core.profile import get_profile_config, Profile
 
 README = Path(__file__).resolve().parents[1] / "README.md"
 
