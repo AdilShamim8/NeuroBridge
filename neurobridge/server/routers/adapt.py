@@ -60,9 +60,11 @@ def adapt_text(payload: AdaptRequest, request: Request) -> AdaptResponse:
     bridge = request.app.state.bridge
     profile = _resolve_profile_param(payload.profile)
     response = bridge.chat(payload.text, user_id=payload.user_id, profile=profile)
-    effective_config = bridge.memory_store.load_profile(payload.user_id) if (
-        payload.user_id and bridge.memory_store
-    ) else None
+    effective_config = (
+        bridge.memory_store.load_profile(payload.user_id)
+        if (payload.user_id and bridge.memory_store)
+        else None
+    )
     profile_config = effective_config or get_profile_config(
         profile if profile is not None else Profile.ADHD
     )
