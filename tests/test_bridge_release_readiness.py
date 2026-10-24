@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import builtins
+from typing import ClassVar
 
 import pytest
 
@@ -11,6 +12,7 @@ from neurobridge import Config, NeuroBridge, Profile
 from neurobridge.core.bridge import AdaptedResponse
 from neurobridge.core.memory import InMemoryStore, ProfileAdjustments, create_feedback_record
 from neurobridge.core.profile import get_profile_config
+from neurobridge.exceptions import LLMClientError
 
 
 class _SyncStreamingClient:
@@ -109,7 +111,7 @@ def test_chat_stream_wraps_chat_stream_errors() -> None:
         async for _ in bridge.chat_stream("message"):
             pass
 
-    with pytest.raises(Exception):
+    with pytest.raises(LLMClientError):
         asyncio.run(_run())
 
 
@@ -195,7 +197,7 @@ def test_extract_chunk_text_from_choices_and_text_object() -> None:
         delta = _Delta()
 
     class _WithChoices:
-        choices = [_Choice()]
+        choices: ClassVar[list] = [_Choice()]
 
     class _WithText:
         text = "from-text"

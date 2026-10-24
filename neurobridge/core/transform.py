@@ -864,7 +864,7 @@ class TransformPipeline:
                         f"✓ {module.name}: {len(_WORD_RE.findall(before))} words -> "
                         f"{len(_WORD_RE.findall(output))} words ({duration_ms:.1f}ms, {verb})"
                     )
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - one failing module must not kill the pipeline
                 duration_ms = (perf_counter() - start) * 1000
                 error = TransformError(module.name, str(exc))
                 warnings.warn(str(error), UserWarning, stacklevel=2)

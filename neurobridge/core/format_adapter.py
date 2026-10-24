@@ -249,7 +249,7 @@ class JSONAdapter(BaseFormatAdapter):
             return "heading"
         if block_type == "code":
             return "code"
-        if lowered.startswith("summary:") or lowered.startswith("bottom line"):
+        if lowered.startswith(("summary:", "bottom line")):
             return "summary"
         if lowered.startswith("example:"):
             return "example"

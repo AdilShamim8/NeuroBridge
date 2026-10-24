@@ -14,10 +14,10 @@ from neurobridge.core.profile import Profile
 
 try:  # langchain>=0.2
     from langchain_core.output_parsers import BaseOutputParser  # type: ignore
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     try:  # langchain>=0.1
         from langchain.schema import BaseOutputParser  # type: ignore
-    except Exception:  # pragma: no cover
+    except ImportError:  # pragma: no cover
 
         class BaseOutputParser:  # type: ignore
             def parse(self, text: str) -> str:
@@ -26,10 +26,10 @@ except Exception:  # pragma: no cover
 
 try:
     from langchain_core.callbacks.base import BaseCallbackHandler  # type: ignore
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     try:
         from langchain.callbacks.base import BaseCallbackHandler  # type: ignore
-    except Exception:  # pragma: no cover
+    except ImportError:  # pragma: no cover
 
         class BaseCallbackHandler:  # type: ignore
             pass
@@ -37,7 +37,7 @@ except Exception:  # pragma: no cover
 
 try:
     from langchain.chains.base import Chain  # type: ignore
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
 
     class Chain:  # type: ignore
         @property
@@ -118,7 +118,7 @@ class NeuroBridgeCallbackHandler(BaseCallbackHandler):
             return
         try:
             generations[0][0].text = adapted_text
-        except Exception:
+        except (AttributeError, IndexError, TypeError):
             return
 
 
@@ -165,7 +165,10 @@ class NeuroBridgeChain(Chain):
     def run(self, query: str, user_id: str | None = None) -> str:
         rendered = self._render_prompt(query)
         raw = self._invoke_llm(rendered)
-        return self.parser.parse(raw if user_id is None else raw)
+        # user_id is accepted for API symmetry with bridge.chat(); adaptation here is
+        # stateless so the identifier is intentionally unused.
+        _ = user_id
+        return self.parser.parse(raw)
 
     def _render_prompt(self, query: str) -> str:
         if self.prompt is None:
@@ -173,7 +176,7 @@ class NeuroBridgeChain(Chain):
         if hasattr(self.prompt, "format"):
             try:
                 return str(self.prompt.format(query=query))
-            except Exception:
+            except TypeError:
                 return str(self.prompt.format(input=query))
         if callable(self.prompt):
             return str(self.prompt(query))
@@ -231,7 +234,7 @@ class NeuroBridgeRetriever:
             if isinstance(content, str):
                 try:
                     doc.page_content = self.bridge.adapt(content)
-                except Exception:
+                except Exception:  # noqa: BLE001 - one bad document must not fail the batch
                     adapted_docs.append(doc)
                     continue
             adapted_docs.append(doc)

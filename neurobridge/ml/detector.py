@@ -32,7 +32,7 @@ class ProfileDetector:
     def _try_load_model(self) -> None:
         try:
             self._model = load_model()
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001 - any load failure falls back to the quiz flow
             self._model = None
             self._load_error = exc
 

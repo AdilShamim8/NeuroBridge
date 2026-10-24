@@ -283,7 +283,7 @@ class RedisMemoryStore(BaseMemoryStore):
             self._pool = redis.ConnectionPool.from_url(redis_url, decode_responses=True)
             self._redis = redis.Redis(connection_pool=self._pool)
             self._redis.ping()
-        except Exception:
+        except Exception:  # noqa: BLE001 - any redis/client failure degrades to fallback store
             self._redis = None
 
     @staticmethod
@@ -314,7 +314,7 @@ class RedisMemoryStore(BaseMemoryStore):
             pipe = self._redis.pipeline(transaction=True)
             pipe.set(self._profile_key(user_id), payload, ex=self.PROFILE_TTL_SECONDS)
             pipe.execute()
-        except Exception:
+        except Exception:  # noqa: BLE001 - redis outage must not fail user-facing reads/writes
             return
 
     def load_profile(self, user_id: str) -> ProfileConfig | None:
@@ -325,7 +325,7 @@ class RedisMemoryStore(BaseMemoryStore):
             if not value:
                 return self._fallback.load_profile(user_id)
             return ProfileConfig(**json.loads(value))
-        except Exception:
+        except Exception:  # noqa: BLE001 - redis outage must not fail user-facing reads/writes
             return self._fallback.load_profile(user_id)
 
     def save_feedback(self, record: FeedbackRecord) -> None:
@@ -340,7 +340,7 @@ class RedisMemoryStore(BaseMemoryStore):
             pipe.set(feedback_key, payload)
             pipe.rpush(index_key, record.interaction_id)
             pipe.execute()
-        except Exception:
+        except Exception:  # noqa: BLE001 - redis outage must not fail user-facing reads/writes
             return
 
     def get_feedback(self, user_id: str) -> list[FeedbackRecord]:
@@ -365,7 +365,7 @@ class RedisMemoryStore(BaseMemoryStore):
                 data = json.loads(raw)
                 records.append(FeedbackRecord(**data))
             return records or self._fallback.get_feedback(user_id)
-        except Exception:
+        except Exception:  # noqa: BLE001 - redis outage must not fail user-facing reads/writes
             return self._fallback.get_feedback(user_id)
 
     def increment_interaction(self, user_id: str) -> int:
@@ -375,7 +375,7 @@ class RedisMemoryStore(BaseMemoryStore):
         try:
             value = self._redis.incr(self._interaction_key(user_id))
             return int(value)
-        except Exception:
+        except Exception:  # noqa: BLE001 - redis outage must not fail user-facing reads/writes
             return fallback_count
 
     def get_interaction_count(self, user_id: str) -> int:
@@ -386,7 +386,7 @@ class RedisMemoryStore(BaseMemoryStore):
             if value is None:
                 return self._fallback.get_interaction_count(user_id)
             return int(value)
-        except Exception:
+        except Exception:  # noqa: BLE001 - redis outage must not fail user-facing reads/writes
             return self._fallback.get_interaction_count(user_id)
 
     def clear_user_data(self, user_id: str) -> None:
@@ -405,7 +405,7 @@ class RedisMemoryStore(BaseMemoryStore):
             )
             if keys:
                 self._redis.delete(*keys)
-        except Exception:
+        except Exception:  # noqa: BLE001 - redis outage must not fail user-facing reads/writes
             return
 
     def close(self) -> None:
@@ -413,7 +413,7 @@ class RedisMemoryStore(BaseMemoryStore):
             return
         try:
             self._pool.disconnect()
-        except Exception:
+        except Exception:  # noqa: BLE001 - redis outage must not fail user-facing reads/writes
             return
 
 

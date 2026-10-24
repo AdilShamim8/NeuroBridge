@@ -259,7 +259,8 @@ class QuizEngine:
 
         answers = payload.get("answers") if isinstance(payload, dict) else None
         if not isinstance(answers, dict):
-            raise ValueError("JSON payload must contain an 'answers' object")
+            # ValueError (not TypeError) on purpose: the server maps ValueError to HTTP 400.
+            raise ValueError("JSON payload must contain an 'answers' object")  # noqa: TRY004
 
         normalized: dict[str, int] = {}
         for question in self.QUESTIONS:
@@ -267,7 +268,10 @@ class QuizEngine:
                 raise ValueError(f"Missing answer for question: {question.id}")
             raw_index = answers[question.id]
             if not isinstance(raw_index, int):
-                raise ValueError(f"Answer index for {question.id} must be an integer")
+                # ValueError (not TypeError) on purpose: the server maps ValueError to HTTP 400.
+                raise ValueError(  # noqa: TRY004
+                    f"Answer index for {question.id} must be an integer"
+                )
             normalized[question.id] = raw_index
         return self.score_answers(normalized)
 

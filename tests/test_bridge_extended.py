@@ -9,6 +9,7 @@ import pytest
 from neurobridge import Config, NeuroBridge, Profile
 from neurobridge.core.bridge import AdaptedResponse
 from neurobridge.core.memory import ProfileAdjustments
+from neurobridge.exceptions import LLMClientError, ProfileNotSetError
 
 
 def test_config_from_env_parses_and_sanitizes(monkeypatch) -> None:
@@ -30,7 +31,7 @@ def test_chat_raises_profile_not_set_when_not_explicit() -> None:
     bridge = NeuroBridge(config=Config(memory_backend="none"))
     bridge._profile_explicit = False
 
-    with pytest.raises(Exception):
+    with pytest.raises(ProfileNotSetError):
         bridge.chat("Hello")
 
 
@@ -42,7 +43,7 @@ class _FailingClient:
 
 def test_chat_wraps_llm_client_errors() -> None:
     bridge = NeuroBridge(llm_client=_FailingClient(), config=Config(memory_backend="none"))
-    with pytest.raises(Exception):
+    with pytest.raises(LLMClientError, match="boom"):
         bridge.chat("message")
 
 

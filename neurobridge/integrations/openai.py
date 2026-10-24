@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import warnings
 from dataclasses import dataclass
 from typing import Any
 
@@ -62,7 +63,14 @@ class _ChatCompletionsWrapper:
                 adapted = self.bridge.adapt(content)
                 message.content = adapted
             return response
-        except Exception:
+        except Exception as exc:  # noqa: BLE001 - client call must survive adaptation bugs
+            # Adaptation must never break the client call, but failing silently hides
+            # real problems from users, so surface it as a warning.
+            warnings.warn(
+                f"NeuroBridge adaptation failed, returning unadapted response: {exc}",
+                UserWarning,
+                stacklevel=2,
+            )
             return response
 
 

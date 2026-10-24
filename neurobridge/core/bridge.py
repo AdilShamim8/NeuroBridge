@@ -8,12 +8,15 @@ import re
 from collections.abc import AsyncGenerator, AsyncIterator, Iterable
 from dataclasses import asdict, dataclass
 from time import perf_counter
+from types import TracebackType
 from typing import (
     Any,
     Literal,
     cast,
 )
 from uuid import uuid4
+
+from typing_extensions import Self
 
 from neurobridge.core.memory import (
     BaseMemoryStore,
@@ -133,7 +136,7 @@ class NeuroBridge:
 
             console = Console()
             console.print(Panel(message, border_style="cyan", title="NeuroBridge Debug"))
-        except Exception:
+        except Exception:  # noqa: BLE001 - debug output must never crash the pipeline
             print(f"[NeuroBridge debug] {message}")
 
     @property
@@ -460,10 +463,15 @@ class NeuroBridge:
         """Async wrapper for close()."""
         await asyncio.to_thread(self.close)
 
-    async def __aenter__(self) -> NeuroBridge:
+    async def __aenter__(self) -> Self:
         return self
 
-    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
         await self.aclose()
 
     async def _iterate_source_chunks(self, message: str, **kwargs: Any) -> AsyncIterator[str]:
