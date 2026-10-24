@@ -1,6 +1,12 @@
 site_name: NeuroBridge
 site_description: Cognitive accessibility middleware for AI
 site_url: https://neurobridge.dev
+# Internal working documents (issue drafts, launch checklists) stay in the
+# repository but must not be published to the docs site: their repo-relative
+# links only resolve on GitHub, and strict builds failed on all 72 of them.
+exclude_docs: |
+  community/**
+  release/**
 theme:
   name: material
   features:
@@ -13,10 +19,12 @@ plugins:
           paths:
             - .
 nav:
-  - Getting Started: docs/getting-started.md
-  - Profiles: docs/profiles.md
-  - Integrations: docs/integrations.md
-  - API Reference: docs/api-reference.md
+  - Getting Started: getting-started.md
+  - Profiles: profiles.md
+  - Integrations: integrations.md
+  - API Reference: api-reference.md
+  - ML Detection Design: ml_detection_design.md
+  - Privacy Policy: PRIVACY_POLICY.md
 markdown_extensions:
   - admonition
   - codehilite
