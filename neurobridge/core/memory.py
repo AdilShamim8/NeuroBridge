@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-import warnings
 import sqlite3
+import warnings
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -286,15 +286,16 @@ class RedisMemoryStore(BaseMemoryStore):
             self._pool = redis.ConnectionPool.from_url(redis_url, decode_responses=True)
             self._redis = redis.Redis(connection_pool=self._pool)
             self._redis.ping()
-        except Exception as exc:  # noqa: BLE001 - any redis/client failure degrades to fallback store
+        except (
+            Exception
+        ) as exc:  # noqa: BLE001 - any redis/client failure degrades to fallback store
             # Degrading silently created a persistence illusion: callers believed
             # they had durable Redis storage while data lived in a per-process
             # in-memory copy. Make the degradation visible.
             self._redis = None
             self._fallback_reason = str(exc)
             warnings.warn(
-                "Redis unavailable, falling back to a non-persistent in-memory store: "
-                f"{exc}",
+                "Redis unavailable, falling back to a non-persistent in-memory store: " f"{exc}",
                 UserWarning,
                 stacklevel=2,
             )

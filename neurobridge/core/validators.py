@@ -68,7 +68,7 @@ def sanitize_key_token(value: str) -> str:
     redis-cli.
     """
     digest = hashlib.sha256(value.encode()).hexdigest()[:16]
-    readable = re.sub(r"[^A-Za-z0-9_-]", "_", value)[:MAX_USER_ID_LENGTH - 17]
+    readable = re.sub(r"[^A-Za-z0-9_-]", "_", value)[: MAX_USER_ID_LENGTH - 17]
     return f"{readable}.{digest}"
 
 
