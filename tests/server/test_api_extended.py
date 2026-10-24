@@ -294,3 +294,41 @@ def test_api_key_identity_is_a_digest_not_the_secret() -> None:
     assert identity
     assert "super-secret" not in identity
     assert len(identity) == 16
+
+
+def test_request_profile_does_not_bleed_into_later_requests() -> None:
+    """Regression: the adapt router called bridge.set_profile() on the single
+    shared bridge instance, so one request's 'profile' parameter changed the
+    output of every subsequent profile-less request (and raced under
+    concurrency). Profiles are now resolved per request."""
+    app = create_app(
+        config=Config(memory_backend="none"),
+        server_config=ServerConfig(allowed_origins=["*"], rate_limit_per_minute=1000),
+    )
+    client = TestClient(app)
+
+    first = client.post("/api/v1/adapt", json={"text": "Hello there friend.", "profile": "dyslexia"})
+    assert first.status_code == 200
+    assert first.json()["profile_used"] == "dyslexia"
+
+    # A follow-up request without a profile must fall back to the bridge
+    # default (adhd), not inherit dyslexia from the previous request.
+    second = client.post("/api/v1/adapt", json={"text": "Hello there friend."})
+    assert second.status_code == 200
+    assert second.json()["profile_used"] == "adhd"
+
+
+def test_profile_used_is_serialized_as_wire_name() -> None:
+    """Regression: str(Profile.DYSLEXIA) produced 'Profile.DYSLEXIA' in API
+    responses while the quiz endpoint returned 'dyslexia'."""
+    app = create_app(
+        config=Config(memory_backend="none"),
+        server_config=ServerConfig(allowed_origins=["*"], rate_limit_per_minute=1000),
+    )
+    client = TestClient(app)
+    response = client.post(
+        "/api/v1/adapt", json={"text": "Some content here.", "profile": "dyslexia"}
+    )
+    assert response.status_code == 200
+    assert response.json()["profile_used"] == "dyslexia"
+    assert "Profile." not in response.json()["profile_used"]

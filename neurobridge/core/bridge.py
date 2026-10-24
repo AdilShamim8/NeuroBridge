@@ -191,6 +191,71 @@ class NeuroBridge:
             debug_callback=self._debug_log,
         )
 
+    @staticmethod
+    def _coerce_profile_override(
+        profile: Profile | CustomProfile | QuizResult,
+    ) -> tuple[ProfileConfig, Profile | str]:
+        """Accept the public profile types and return (config, active id)."""
+        if isinstance(profile, QuizResult):
+            return profile.recommended_config, profile.primary_profile
+        if isinstance(profile, Profile):
+            return get_profile_config(profile), profile
+        if isinstance(profile, CustomProfile):
+            profile.validate()
+            return profile, Profile.CUSTOM
+        raise TypeError("profile must be a Profile, CustomProfile, or QuizResult")
+
+    def _resolve_effective_profile(
+        self,
+        user_id: str | None,
+        profile: Profile | CustomProfile | QuizResult | None,
+    ) -> tuple[TransformPipeline, ProfileConfig, Profile | str]:
+        """Resolve the per-call profile without mutating shared state."""
+        if profile is not None:
+            config, active = self._coerce_profile_override(profile)
+            return (
+                TransformPipeline(
+                    profile=config,
+                    debug=self.config.debug,
+                    debug_callback=self._debug_log,
+                ),
+                config,
+                active,
+            )
+        if user_id and self._memory_store is not None:
+            stored = self._memory_store.load_profile(user_id)
+            if stored is not None:
+                return (
+                    TransformPipeline(
+                        profile=stored,
+                        debug=self.config.debug,
+                        debug_callback=self._debug_log,
+                    ),
+                    stored,
+                    Profile.CUSTOM,
+                )
+        return self._pipeline, self._profile_config, self._active_profile
+
+    @staticmethod
+    def _adjusted_config(
+        base: ProfileConfig,
+        adjustments: ProfileAdjustments,
+    ) -> ProfileConfig:
+        """Apply feedback-driven adjustments to a profile configuration."""
+        updated = ProfileConfig(
+            chunk_size=max(1, base.chunk_size + adjustments.chunk_size_delta),
+            tone=adjustments.tone or base.tone,
+            ambiguity_resolution=base.ambiguity_resolution,
+            number_format=base.number_format,
+            leading_style=base.leading_style,
+            reading_level=max(1, base.reading_level),
+            max_sentence_words=max(
+                6, base.max_sentence_words + adjustments.max_sentence_words_delta
+            ),
+        )
+        updated.validate()
+        return updated
+
     def adapt(self, text: str) -> str:
         """Run the transform pipeline over plain text."""
         validate_text_input(text, max_length=self.config.max_text_length)
@@ -206,13 +271,23 @@ class NeuroBridge:
         """Expose pipeline cache statistics for observability and tuning."""
         return self._pipeline.cache_stats()
 
-    def chat(self, message: str, user_id: str | None = None, **kwargs: Any) -> AdaptedResponse:
+    def chat(
+        self,
+        message: str,
+        user_id: str | None = None,
+        profile: Profile | CustomProfile | QuizResult | None = None,
+        **kwargs: Any,
+    ) -> AdaptedResponse:
         """Return an adapted response.
 
-        Day 1 uses a safe scaffold implementation:
-        - With no client, input message is used as raw text.
-        - With a client implementing chat(message=...), that result is used.
-        - Otherwise, input is echoed and adapted.
+        Resolution order for the effective profile:
+        1. an explicit ``profile`` argument for this call only,
+        2. the stored profile for ``user_id`` (when memory is enabled),
+        3. the bridge default set via ``set_profile``.
+
+        The bridge keeps no per-request state: the shared default profile and
+        pipeline are never mutated by ``chat``, so concurrent calls with
+        different profiles cannot bleed into each other.
         """
         validate_text_input(message, max_length=self.config.max_text_length, field="message")
         if not message.strip():
@@ -222,25 +297,16 @@ class NeuroBridge:
         if not self._profile_explicit and not user_id:
             raise ProfileNotSetError()
 
+        pipeline, profile_config, active_profile = self._resolve_effective_profile(user_id, profile)
+
         if self.config.debug:
-            self._debug_log(f"Profile config: {self._profile_config}")
-            cache = self.cache_stats()
+            self._debug_log(f"Profile config: {profile_config}")
+            cache = pipeline.cache_stats()
             self._debug_log(
                 "Cache stats: "
                 f"hits={int(cache['hits'])}, misses={int(cache['misses'])}, "
                 f"evictions={int(cache['evictions'])}, hit_rate={cache['hit_rate']:.2%}"
             )
-
-        if user_id and self._memory_store is not None:
-            stored_profile = self._memory_store.load_profile(user_id)
-            if stored_profile is not None:
-                self._profile_config = stored_profile
-                self._active_profile = Profile.CUSTOM
-                self._pipeline = TransformPipeline(
-                    profile=self._profile_config,
-                    debug=self.config.debug,
-                    debug_callback=self._debug_log,
-                )
 
         raw_text = message
         if self.llm_client is not None and hasattr(self.llm_client, "chat"):
@@ -251,10 +317,10 @@ class NeuroBridge:
                 raise LLMClientError(str(exc)) from exc
 
         start = perf_counter()
-        adapted_text = self.adapt(raw_text)
+        adapted_text = pipeline.transform(raw_text)
         processing_ms = (perf_counter() - start) * 1000
         if user_id and self._memory_store is not None:
-            self._memory_store.save_profile(user_id, self._profile_config)
+            self._memory_store.save_profile(user_id, profile_config)
             interaction_count = self._memory_store.increment_interaction(user_id)
             if (
                 self.config.feedback_learning
@@ -262,20 +328,20 @@ class NeuroBridge:
                 and interaction_count % self.config.auto_adjust_after == 0
             ):
                 adjustments = self._feedback_analyser.analyse_feedback(user_id, self._memory_store)
-                self._apply_adjustments(adjustments)
-                self._memory_store.save_profile(user_id, self._profile_config)
+                profile_config = self._adjusted_config(profile_config, adjustments)
+                self._memory_store.save_profile(user_id, profile_config)
 
         return AdaptedResponse(
             raw_text=raw_text,
             adapted_text=adapted_text,
-            profile=self._active_profile,
+            profile=active_profile,
             interaction_id=str(uuid4()),
-            modules_run=[entry.module for entry in self._pipeline.last_run],
+            modules_run=[entry.module for entry in pipeline.last_run],
             processing_ms=processing_ms,
             metadata={
                 "memory_backend": self.config.memory_backend,
                 "output_format": self.config.output_format,
-                "cache": self.cache_stats(),
+                "cache": pipeline.cache_stats(),
             },
         )
 
@@ -339,19 +405,8 @@ class NeuroBridge:
         }
 
     def _apply_adjustments(self, adjustments: ProfileAdjustments) -> None:
-        updated = ProfileConfig(
-            chunk_size=max(1, self._profile_config.chunk_size + adjustments.chunk_size_delta),
-            tone=adjustments.tone or self._profile_config.tone,
-            ambiguity_resolution=self._profile_config.ambiguity_resolution,
-            number_format=self._profile_config.number_format,
-            leading_style=self._profile_config.leading_style,
-            reading_level=max(1, self._profile_config.reading_level),
-            max_sentence_words=max(
-                6, self._profile_config.max_sentence_words + adjustments.max_sentence_words_delta
-            ),
-        )
-        updated.validate()
-        self._profile_config = updated
+        """Apply feedback adjustments to the bridge default profile."""
+        self._profile_config = self._adjusted_config(self._profile_config, adjustments)
         self._active_profile = Profile.CUSTOM
         self._pipeline = TransformPipeline(
             profile=self._profile_config,
@@ -363,25 +418,21 @@ class NeuroBridge:
         self,
         message: str,
         user_id: str | None = None,
+        profile: Profile | CustomProfile | QuizResult | None = None,
         **kwargs: Any,
     ) -> AsyncGenerator[str | AdaptedResponse, None]:
-        """Yield adapted chunks as sentence boundaries are reached, then final response."""
+        """Yield adapted chunks as sentence boundaries are reached, then final response.
+
+        Profile resolution follows the same precedence as ``chat`` and never
+        mutates the bridge's shared default profile.
+        """
         validate_text_input(message, max_length=self.config.max_text_length, field="message")
         if not message.strip():
             raise ValueError("message must be a non-empty string")
         if user_id is not None:
             validate_user_id(user_id)
 
-        if user_id and self._memory_store is not None:
-            stored_profile = self._memory_store.load_profile(user_id)
-            if stored_profile is not None:
-                self._profile_config = stored_profile
-                self._active_profile = Profile.CUSTOM
-                self._pipeline = TransformPipeline(
-                    profile=self._profile_config,
-                    debug=self.config.debug,
-                    debug_callback=self._debug_log,
-                )
+        pipeline, profile_config, active_profile = self._resolve_effective_profile(user_id, profile)
 
         raw_collected: list[str] = []
         adapted_collected: list[str] = []
@@ -402,8 +453,10 @@ class NeuroBridge:
                     continue
 
                 chunk_sentences.append(sentence)
-                if len(chunk_sentences) >= max(1, self._profile_config.chunk_size):
-                    adapted_chunk = self._adapt_stream_chunk(chunk_sentences)
+                if len(chunk_sentences) >= max(1, profile_config.chunk_size):
+                    adapted_chunk = self._adapt_stream_chunk(
+                        chunk_sentences, pipeline, profile_config
+                    )
                     if adapted_chunk:
                         adapted_collected.append(adapted_chunk)
                         yield adapted_chunk
@@ -412,7 +465,7 @@ class NeuroBridge:
         if sentence_buffer.strip():
             chunk_sentences.append(sentence_buffer.strip())
         if chunk_sentences:
-            adapted_chunk = self._adapt_stream_chunk(chunk_sentences)
+            adapted_chunk = self._adapt_stream_chunk(chunk_sentences, pipeline, profile_config)
             if adapted_chunk:
                 adapted_collected.append(adapted_chunk)
                 yield adapted_chunk
@@ -420,11 +473,11 @@ class NeuroBridge:
         raw_text = "".join(raw_collected).strip() or message
         adapted_text = "\n\n".join([part for part in adapted_collected if part.strip()]).strip()
         if not adapted_text:
-            adapted_text = self.adapt(raw_text)
+            adapted_text = pipeline.transform(raw_text)
 
         processing_ms = (perf_counter() - start) * 1000
         if user_id and self._memory_store is not None:
-            self._memory_store.save_profile(user_id, self._profile_config)
+            self._memory_store.save_profile(user_id, profile_config)
             interaction_count = self._memory_store.increment_interaction(user_id)
             if (
                 self.config.feedback_learning
@@ -432,15 +485,15 @@ class NeuroBridge:
                 and interaction_count % self.config.auto_adjust_after == 0
             ):
                 adjustments = self._feedback_analyser.analyse_feedback(user_id, self._memory_store)
-                self._apply_adjustments(adjustments)
-                self._memory_store.save_profile(user_id, self._profile_config)
+                profile_config = self._adjusted_config(profile_config, adjustments)
+                self._memory_store.save_profile(user_id, profile_config)
 
         yield AdaptedResponse(
             raw_text=raw_text,
             adapted_text=adapted_text,
-            profile=self._active_profile,
+            profile=active_profile,
             interaction_id=str(uuid4()),
-            modules_run=self._stream_modules_run(),
+            modules_run=self._stream_modules_run(pipeline),
             processing_ms=processing_ms,
             metadata={
                 "memory_backend": self.config.memory_backend,
@@ -551,23 +604,29 @@ class NeuroBridge:
     def _has_incomplete_numeric_tail(sentence: str) -> bool:
         return bool(_INCOMPLETE_NUMBER_TAIL_RE.search(sentence.strip()))
 
-    def _adapt_stream_chunk(self, sentences: list[str]) -> str:
+    @staticmethod
+    def _adapt_stream_chunk(
+        sentences: list[str],
+        pipeline: TransformPipeline,
+        profile_config: ProfileConfig,
+    ) -> str:
         text = " ".join(s.strip() for s in sentences if s.strip())
         if not text:
             return ""
 
         output = text
-        for module in self._pipeline.modules:
+        for module in pipeline.modules:
             if not getattr(module, "enabled", True):
                 continue
             if getattr(module, "name", "") == "priority_reorderer":
                 continue
-            output = module.apply(output, self._profile_config)
+            output = module.apply(output, profile_config)
         return output.strip()
 
-    def _stream_modules_run(self) -> list[str]:
+    @staticmethod
+    def _stream_modules_run(pipeline: TransformPipeline) -> list[str]:
         names: list[str] = []
-        for module in self._pipeline.modules:
+        for module in pipeline.modules:
             if not getattr(module, "enabled", True):
                 continue
             if getattr(module, "name", "") == "priority_reorderer":

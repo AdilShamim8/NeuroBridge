@@ -19,25 +19,36 @@ from neurobridge.server.models import (
 router = APIRouter(tags=["adapt"])
 
 
-def _set_profile_if_provided(bridge, profile_name: str | None) -> None:
+def _resolve_profile_param(profile_name: str | None) -> Profile | None:
+    """Translate the request profile name into a Profile for a single call.
+
+    The resolved profile is passed per request; the shared bridge instance is
+    never reconfigured, so concurrent requests cannot leak profiles into each
+    other.
+    """
     if not profile_name:
-        return
+        return None
     normalized = profile_name.strip().upper()
     try:
-        bridge.set_profile(Profile[normalized])
+        return Profile[normalized]
     except KeyError as exc:
         raise HTTPException(status_code=400, detail=f"Unsupported profile: {profile_name}") from exc
+
+
+def _profile_value(profile: Profile | str) -> str:
+    """Serialize a profile identifier as its wire name ('dyslexia', not 'Profile.DYSLEXIA')."""
+    return profile.value if isinstance(profile, Profile) else str(profile)
 
 
 @router.post("/adapt", response_model=AdaptResponse)
 def adapt_text(payload: AdaptRequest, request: Request) -> AdaptResponse:
     bridge = request.app.state.bridge
-    _set_profile_if_provided(bridge, payload.profile)
-    response = bridge.chat(payload.text, user_id=payload.user_id)
+    profile = _resolve_profile_param(payload.profile)
+    response = bridge.chat(payload.text, user_id=payload.user_id, profile=profile)
     return AdaptResponse(
         adapted_text=response.adapted_text,
         original_text=response.raw_text,
-        profile_used=str(response.profile),
+        profile_used=_profile_value(response.profile),
         transforms_applied=response.modules_run,
         processing_time_ms=response.processing_ms,
     )
@@ -49,15 +60,15 @@ def adapt_batch(payload: BatchAdaptRequest, request: Request) -> BatchAdaptRespo
         raise HTTPException(status_code=400, detail="Maximum batch size is 20")
 
     bridge = request.app.state.bridge
-    _set_profile_if_provided(bridge, payload.profile)
+    profile = _resolve_profile_param(payload.profile)
     results = []
     for item in payload.texts:
-        result = bridge.chat(item, user_id=payload.user_id)
+        result = bridge.chat(item, user_id=payload.user_id, profile=profile)
         results.append(
             AdaptResponse(
                 adapted_text=result.adapted_text,
                 original_text=result.raw_text,
-                profile_used=str(result.profile),
+                profile_used=_profile_value(result.profile),
                 transforms_applied=result.modules_run,
                 processing_time_ms=result.processing_ms,
             )
@@ -68,8 +79,8 @@ def adapt_batch(payload: BatchAdaptRequest, request: Request) -> BatchAdaptRespo
 @router.post("/adapt/stream")
 async def adapt_stream(payload: AdaptRequest, request: Request) -> StreamingResponse:
     bridge = request.app.state.bridge
-    _set_profile_if_provided(bridge, payload.profile)
-    stream = bridge.chat_stream(payload.text, user_id=payload.user_id)
+    profile = _resolve_profile_param(payload.profile)
+    stream = bridge.chat_stream(payload.text, user_id=payload.user_id, profile=profile)
 
     async def event_stream():
         async for item in stream:
