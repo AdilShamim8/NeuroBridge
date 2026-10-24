@@ -97,11 +97,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Tests
-        run: npm test
-
       - name: Build
         run: npm run build
+
+      - name: Tests
+        run: npm test
 
   website:
     name: Website build
