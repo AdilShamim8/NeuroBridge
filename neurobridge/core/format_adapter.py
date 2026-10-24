@@ -361,3 +361,16 @@ def _parse_blocks(text: str) -> list[tuple[str, str]]:
         blocks.append(("paragraph", stripped))
 
     return blocks
+
+
+def get_format_adapter(name: str) -> BaseFormatAdapter | None:
+    """Return the format adapter for a wire-format name, or None if unknown."""
+    adapters: dict[str, type[BaseFormatAdapter]] = {
+        "markdown": MarkdownAdapter,
+        "html": HTMLAdapter,
+        "plain": PlainTextAdapter,
+        "json": JSONAdapter,
+        "tts": TTSAdapter,
+    }
+    adapter_cls = adapters.get(name.strip().lower())
+    return adapter_cls() if adapter_cls is not None else None

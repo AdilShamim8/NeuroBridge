@@ -15,13 +15,7 @@ from rich.spinner import Spinner
 from rich.table import Table
 
 from neurobridge import Config, NeuroBridge, Profile
-from neurobridge.core.format_adapter import (
-    HTMLAdapter,
-    JSONAdapter,
-    MarkdownAdapter,
-    PlainTextAdapter,
-    TTSAdapter,
-)
+from neurobridge.core.format_adapter import get_format_adapter
 from neurobridge.core.quiz import QuizEngine
 from neurobridge.exceptions import NeuroBridgeError
 
@@ -148,11 +142,11 @@ def adapt(
         result = bridge.chat(source_text, user_id=user_id)
 
     adapter_map = {
-        "markdown": MarkdownAdapter(),
-        "html": HTMLAdapter(),
-        "plain": PlainTextAdapter(),
-        "json": JSONAdapter(),
-        "tts": TTSAdapter(),
+        "markdown": get_format_adapter("markdown"),
+        "html": get_format_adapter("html"),
+        "plain": get_format_adapter("plain"),
+        "json": get_format_adapter("json"),
+        "tts": get_format_adapter("tts"),
     }
     if fmt not in adapter_map:
         raise typer.BadParameter(f"Unsupported format: {fmt}")

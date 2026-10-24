@@ -9,6 +9,8 @@ from fastapi.responses import StreamingResponse
 
 from neurobridge import Profile
 from neurobridge.core.bridge import AdaptedResponse
+from neurobridge.core.format_adapter import get_format_adapter
+from neurobridge.core.profile import get_profile_config
 from neurobridge.server.models import (
     AdaptRequest,
     AdaptResponse,
@@ -40,13 +42,34 @@ def _profile_value(profile: Profile | str) -> str:
     return profile.value if isinstance(profile, Profile) else str(profile)
 
 
+def _apply_output_format(text: str, output_format: str | None, profile) -> str:
+    """Render the adapted text in the requested wire format.
+
+    None keeps the pipeline's native markdown-like output (previous behavior).
+    """
+    if output_format is None:
+        return text
+    adapter = get_format_adapter(output_format)
+    if adapter is None:
+        return text
+    return adapter.format(text, profile)
+
+
 @router.post("/adapt", response_model=AdaptResponse)
 def adapt_text(payload: AdaptRequest, request: Request) -> AdaptResponse:
     bridge = request.app.state.bridge
     profile = _resolve_profile_param(payload.profile)
     response = bridge.chat(payload.text, user_id=payload.user_id, profile=profile)
+    effective_config = bridge.memory_store.load_profile(payload.user_id) if (
+        payload.user_id and bridge.memory_store
+    ) else None
+    profile_config = effective_config or get_profile_config(
+        profile if profile is not None else Profile.ADHD
+    )
     return AdaptResponse(
-        adapted_text=response.adapted_text,
+        adapted_text=_apply_output_format(
+            response.adapted_text, payload.output_format, profile_config
+        ),
         original_text=response.raw_text,
         profile_used=_profile_value(response.profile),
         transforms_applied=response.modules_run,

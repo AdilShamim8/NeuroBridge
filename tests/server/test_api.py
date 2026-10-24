@@ -123,3 +123,53 @@ def test_cors_headers_present(tmp_path) -> None:
     )
     assert response.status_code in {200, 204}
     assert "access-control-allow-origin" in response.headers
+
+
+def test_adapt_output_format_html() -> None:
+    """output_format was previously accepted-and-ignored by the server: the
+    format adapters existed but no route ever called them."""
+    app = create_app(
+        config=Config(memory_backend="none"),
+        server_config=ServerConfig(allowed_origins=["*"], rate_limit_per_minute=500),
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/adapt",
+        json={"text": "Some content here.", "profile": "dyslexia", "output_format": "html"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert "<html" in body["adapted_text"].lower()
+    assert "nb-dyslexia" in body["adapted_text"]
+
+
+def test_adapt_output_format_json_is_parseable() -> None:
+    app = create_app(
+        config=Config(memory_backend="none"),
+        server_config=ServerConfig(allowed_origins=["*"], rate_limit_per_minute=500),
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/adapt",
+        json={"text": "Some content here.", "output_format": "json"},
+    )
+    assert response.status_code == 200
+    import json as _json
+
+    parsed = _json.loads(response.json()["adapted_text"])
+    assert "blocks" in parsed
+
+
+def test_adapt_output_format_default_is_untouched() -> None:
+    """Without output_format the pipeline's native markdown-like output is
+    returned unchanged (backwards compatibility)."""
+    app = create_app(
+        config=Config(memory_backend="none"),
+        server_config=ServerConfig(allowed_origins=["*"], rate_limit_per_minute=500),
+    )
+    client = TestClient(app)
+    response = client.post("/api/v1/adapt", json={"text": "Some content here."})
+    assert response.status_code == 200
+    assert "<html" not in response.json()["adapted_text"].lower()

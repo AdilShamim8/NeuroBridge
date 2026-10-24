@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -18,6 +18,7 @@ class AdaptRequest(BaseModel):
     text: str = Field(min_length=1)
     user_id: str | None = None
     profile: str | None = None
+    output_format: Literal["markdown", "html", "plain", "json", "tts"] | None = None
 
     @field_validator("text")
     @classmethod
