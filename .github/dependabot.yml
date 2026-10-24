@@ -17,3 +17,21 @@ updates:
       patch-updates:
         update-types:
           - "patch"
+
+  - package-ecosystem: "npm"
+    directory: "/packages/neurobridge-js"
+    schedule:
+      interval: "weekly"
+    groups:
+      patch-updates:
+        update-types:
+          - "patch"
+
+  - package-ecosystem: "npm"
+    directory: "/website"
+    schedule:
+      interval: "weekly"
+    groups:
+      patch-updates:
+        update-types:
+          - "patch"
