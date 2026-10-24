@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-import asyncio
+import re
 import warnings
 from dataclasses import dataclass
 from typing import Any
 
 from neurobridge.core.bridge import Config, NeuroBridge
 from neurobridge.core.profile import Profile
-from neurobridge.core.quiz import ProfileQuiz
+
+_SENTENCE_END_RE = re.compile(r"([.!?])")
 
 
 class _ChatCompletionsWrapper:
@@ -21,32 +22,14 @@ class _ChatCompletionsWrapper:
         self.parent = parent
 
     def create(self, *args: Any, **kwargs: Any) -> Any:
-        if self.parent.auto_quiz and not self.parent.quiz_done:
-            quiz_profile = ProfileQuiz.run(user_id=kwargs.get("user"))
-            self.bridge.set_profile(quiz_profile)
-            self.parent.quiz_done = True
-
+        # Call the real client first in both modes: adaptation must never
+        # replace the model call, only post-process its output.
         if kwargs.get("stream") is True:
-            message = self._extract_user_message(kwargs)
-            return self._streaming_chunks(message=message, user_id=kwargs.get("user"))
+            stream_obj = self.target.create(*args, **kwargs)
+            return _AdaptingStreamIterator(stream_obj, self.bridge)
 
         response = self.target.create(*args, **kwargs)
         return self._adapt_response(response)
-
-    @staticmethod
-    def _extract_user_message(kwargs: Any) -> str:
-        messages = kwargs.get("messages")
-        if isinstance(messages, list):
-            for item in reversed(messages):
-                if isinstance(item, dict) and item.get("role") == "user":
-                    content = item.get("content")
-                    if isinstance(content, str):
-                        return content
-        return ""
-
-    def _streaming_chunks(self, message: str, user_id: str | None):
-        async_gen = self.bridge.chat_stream(message, user_id=user_id)
-        return _BridgeStreamIterator(async_gen)
 
     def _adapt_response(self, response: Any) -> Any:
         try:
@@ -96,16 +79,11 @@ class _OpenAIChatWrapper:
 
 
 class _OpenAIWrappedClient:
-    """Thin wrapper that preserves client surface while intercepting chat completions.
+    """Thin wrapper that preserves client surface while intercepting chat completions."""
 
-    Full request interception is implemented in a later roadmap day.
-    """
-
-    def __init__(self, client: Any, bridge: NeuroBridge, auto_quiz: bool = False) -> None:
+    def __init__(self, client: Any, bridge: NeuroBridge) -> None:
         self.client = client
         self.bridge = bridge
-        self.auto_quiz = auto_quiz
-        self.quiz_done = False
         self._chat_wrapper = _OpenAIChatWrapper(self.client.chat, self.bridge, self)
 
     @property
@@ -131,35 +109,107 @@ class _StreamingChunk:
     choices: list[_StreamingChoice]
 
 
-class _BridgeStreamIterator:
-    """Synchronous iterator wrapper around an async chat_stream generator."""
+def _extract_delta_text(piece: Any) -> str:
+    """Extract the text delta from an OpenAI-shaped streaming chunk."""
+    if isinstance(piece, str):
+        return piece
+    choices = getattr(piece, "choices", None)
+    if choices:
+        delta = getattr(choices[0], "delta", None)
+        if delta is not None:
+            content = getattr(delta, "content", None)
+            if isinstance(content, str):
+                return content
+    text = getattr(piece, "text", None)
+    if isinstance(text, str):
+        return text
+    return ""
 
-    def __init__(self, async_gen) -> None:  # type: ignore[no-untyped-def]
-        self._async_gen = async_gen
-        self._loop = asyncio.new_event_loop()
+
+class _AdaptingStreamIterator:
+    """Iterate a real model stream and yield adapted chunks at sentence boundaries.
+
+    The underlying client stream is consumed as-is; completed sentences are
+    buffered and adapted in groups, so consumers receive the same adaptation
+    quality as the non-streaming path without waiting for the full response.
+    """
+
+    def __init__(self, stream_obj: Any, bridge: NeuroBridge) -> None:
+        self._stream = iter(stream_obj)
+        self._bridge = bridge
+        self._sentence_buffer = ""
+        self._pending: list[str] = []
 
     def __iter__(self):
         return self
 
-    def __next__(self):
-        try:
-            item = self._loop.run_until_complete(self._async_gen.__anext__())
-        except StopAsyncIteration as exc:
-            self._loop.close()
-            raise StopIteration from exc
+    def __next__(self) -> _StreamingChunk:
+        while not self._pending:
+            try:
+                piece = next(self._stream)
+            except StopIteration as exc:
+                self._flush_remainder()
+                if not self._pending:
+                    raise StopIteration from exc
+                break
+            self._sentence_buffer += _extract_delta_text(piece)
+            self._harvest_complete_sentences()
 
-        if isinstance(item, str):
-            return _StreamingChunk(choices=[_StreamingChoice(delta=_StreamingDelta(content=item))])
-        return _StreamingChunk(choices=[_StreamingChoice(delta=_StreamingDelta(content=""))])
+        text = self._pending.pop(0)
+        return _StreamingChunk(choices=[_StreamingChoice(delta=_StreamingDelta(content=text))])
+
+    def _harvest_complete_sentences(self) -> None:
+        parts = _SENTENCE_END_RE.split(self._sentence_buffer)
+        complete: list[str] = []
+        remainder = ""
+        current = ""
+        for index, part in enumerate(parts):
+            if index % 2 == 0:
+                current += part
+            else:
+                current += part
+                sentence = current.strip()
+                if sentence:
+                    complete.append(sentence)
+                current = ""
+        remainder = current
+        if not complete:
+            return
+        self._sentence_buffer = remainder
+        adapted = self._bridge.adapt_stream_chunk(complete)
+        if adapted:
+            self._pending.append(adapted)
+
+    def _flush_remainder(self) -> None:
+        tail = self._sentence_buffer.strip()
+        self._sentence_buffer = ""
+        if not tail:
+            return
+        adapted = self._bridge.adapt_stream_chunk([tail])
+        if adapted:
+            self._pending.append(adapted)
 
 
 def wrap(client: Any, profile: Profile | None = None, config: Config | None = None) -> Any:
     """Return a wrapped OpenAI-compatible client.
 
-    If profile is not provided, the first call triggers ProfileQuiz to infer profile.
+    Both streaming and non-streaming ``chat.completions.create`` calls go to the
+    real client first; NeuroBridge adapts the returned content afterwards.
+
+    When ``profile`` is omitted the bridge default (ADHD) is used. Profile
+    selection is explicit by design: earlier versions launched an interactive
+    quiz on the first call, which blocked non-TTY callers such as servers,
+    notebooks, and cron jobs on ``input()``. Run ``neurobridge quiz`` on the
+    command line to pick a profile interactively.
     """
     bridge = NeuroBridge(llm_client=None, config=config)
-    auto_quiz = profile is None
-    if profile is not None:
+    if profile is None:
+        warnings.warn(
+            "NeuroBridge wrap() called without a profile: using the default (ADHD). "
+            "Pass profile=Profile.X to choose one, or run 'neurobridge quiz'.",
+            UserWarning,
+            stacklevel=2,
+        )
+    else:
         bridge.set_profile(profile)
-    return _OpenAIWrappedClient(client=client, bridge=bridge, auto_quiz=auto_quiz)
+    return _OpenAIWrappedClient(client=client, bridge=bridge)

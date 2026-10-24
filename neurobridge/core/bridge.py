@@ -271,6 +271,15 @@ class NeuroBridge:
         """Expose pipeline cache statistics for observability and tuning."""
         return self._pipeline.cache_stats()
 
+    def adapt_stream_chunk(self, sentences: list[str]) -> str:
+        """Adapt a group of complete sentences for streaming output.
+
+        Streaming callers (chat_stream, the OpenAI wrapper) adapt sentence
+        groups as they complete; the priority reorderer is skipped because it
+        needs the whole document to classify and reorder paragraphs.
+        """
+        return self._adapt_stream_chunk(sentences, self._pipeline, self._profile_config)
+
     def chat(
         self,
         message: str,
