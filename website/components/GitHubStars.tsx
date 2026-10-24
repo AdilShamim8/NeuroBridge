@@ -38,7 +38,7 @@ export function GitHubStars() {
 
   return (
     <a
-      href="https://github.com"
+      href="https://github.com/AdilShamim8/NeuroBridge"
       target="_blank"
       rel="noreferrer"
       className="badge-pill mt-4 inline-flex border border-black/10 bg-white/80 text-brand-ink"

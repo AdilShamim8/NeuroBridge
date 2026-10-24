@@ -4,8 +4,12 @@ const withMDX = require("@next/mdx")({
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
-  "style-src 'self' 'unsafe-inline'",
+  // plausible.io serves the analytics script the layout loads; Google Fonts
+  // and jsDelivr serve the Atkinson Hyperlegible / OpenDyslexic dyslexia-font
+  // stylesheets. Without these entries the CSP silently blocked the site's
+  // own accessibility fonts and analytics.
+  "script-src 'self' 'unsafe-inline' https://plausible.io",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
   "img-src 'self' data: https:",
   "font-src 'self' https: data:",
   "connect-src 'self' https:",

@@ -48,7 +48,7 @@ export function Nav() {
             </Link>
           ))}
           <a
-            href="https://github.com"
+            href="https://github.com/AdilShamim8/NeuroBridge"
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-sm font-semibold hover:bg-black/5"
@@ -71,7 +71,7 @@ export function Nav() {
             </Link>
           ))}
           <a
-            href="https://github.com"
+            href="https://github.com/AdilShamim8/NeuroBridge"
             target="_blank"
             rel="noreferrer"
             className="block rounded-lg px-2 py-1 text-sm font-medium"

@@ -38,7 +38,7 @@ const organizationSchema = {
   name: "NeuroBridge",
   url: "https://neurobridge.dev",
   logo: "https://neurobridge.dev/icon.png",
-  sameAs: ["https://github.com"],
+  sameAs: ["https://github.com/AdilShamim8/NeuroBridge"],
   description: "Cognitive accessibility middleware for AI output."
 };
 

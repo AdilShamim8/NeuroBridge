@@ -17,7 +17,7 @@ export function Footer() {
         <div className="flex flex-wrap gap-2">
           <Link href="/changelog"><Badge>Changelog</Badge></Link>
           <Link href="/newsletter"><Badge>Newsletter</Badge></Link>
-          <a href="https://github.com" target="_blank" rel="noreferrer" onClick={() => trackEvent("github_click", { source: "footer" })}><Badge>GitHub</Badge></a>
+          <a href="https://github.com/AdilShamim8/NeuroBridge" target="_blank" rel="noreferrer" onClick={() => trackEvent("github_click", { source: "footer" })}><Badge>GitHub</Badge></a>
           <a href="https://discord.com" target="_blank" rel="noreferrer"><Badge>Discord</Badge></a>
           <a href="https://npmjs.com" target="_blank" rel="noreferrer"><Badge>npm</Badge></a>
           <a href="https://pypi.org" target="_blank" rel="noreferrer"><Badge>PyPI</Badge></a>

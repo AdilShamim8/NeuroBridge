@@ -45,7 +45,7 @@ export function Hero() {
       >
         <Link href="/playground" className="w-full sm:w-auto"><Button className="w-full">Try it now <ArrowRight className="ml-1 h-4 w-4" /></Button></Link>
         <Link href="/newsletter" className="w-full sm:w-auto"><Button variant="secondary" className="w-full">Join newsletter</Button></Link>
-        <a href="https://github.com" target="_blank" rel="noreferrer" className="w-full sm:w-auto" onClick={() => trackEvent("github_click", { source: "hero-cta" })}><Button variant="secondary" className="w-full">View on GitHub</Button></a>
+        <a href="https://github.com/AdilShamim8/NeuroBridge" target="_blank" rel="noreferrer" className="w-full sm:w-auto" onClick={() => trackEvent("github_click", { source: "hero-cta" })}><Button variant="secondary" className="w-full">View on GitHub</Button></a>
       </motion.div>
       <motion.div initial={reduceMotion ? { opacity: 1 } : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.45, duration: 0.5 }}>
         <GitHubStars />
