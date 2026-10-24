@@ -50,10 +50,13 @@ class ProfileDetector:
         feature_vector = extract_features(events)
 
         if self._model is None:
+            reason = "Model unavailable. Falling back to quiz."
+            if self._load_error is not None:
+                reason = f"Model unavailable ({self._load_error}). Falling back to quiz."
             return ProfileDetectionResult(
                 profile=Profile.ADHD.value,
                 confidence=0.0,
-                reasoning="Model unavailable. Falling back to quiz.",
+                reasoning=reason,
                 fallback_to_quiz=True,
             )
 

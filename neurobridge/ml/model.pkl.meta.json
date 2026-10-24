@@ -1,0 +1,12 @@
+{
+  "sklearn_version": "1.5.2",
+  "feature_count": 15,
+  "profile_order": [
+    "adhd",
+    "autism",
+    "dyslexia",
+    "anxiety",
+    "dyscalculia"
+  ],
+  "model_class": "RandomForestClassifier"
+}
