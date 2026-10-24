@@ -307,7 +307,9 @@ def test_request_profile_does_not_bleed_into_later_requests() -> None:
     )
     client = TestClient(app)
 
-    first = client.post("/api/v1/adapt", json={"text": "Hello there friend.", "profile": "dyslexia"})
+    first = client.post(
+        "/api/v1/adapt", json={"text": "Hello there friend.", "profile": "dyslexia"}
+    )
     assert first.status_code == 200
     assert first.json()["profile_used"] == "dyslexia"
 
