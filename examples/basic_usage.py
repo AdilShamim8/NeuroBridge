@@ -47,6 +47,7 @@ def example_custom_profile() -> None:
     response = bridge.chat("Summarize this architecture proposal.")
     print("[custom]", response.adapted_text)
 
+
 if __name__ == "__main__":
     example_basic_two_line()
     example_with_memory_user_id()

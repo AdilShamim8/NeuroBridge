@@ -10,7 +10,9 @@ class DemoPipeline:
     def __call__(self, inputs, **kwargs):
         _ = kwargs
         if isinstance(inputs, str):
-            return [{"generated_text": f"Generated: {inputs} This is critical and must be done ASAP."}]
+            return [
+                {"generated_text": f"Generated: {inputs} This is critical and must be done ASAP."}
+            ]
         return [{"generated_text": "This is urgent and needs immediate action."}]
 
 

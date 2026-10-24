@@ -45,7 +45,10 @@ def _build_examples() -> List[List[str]]:
 
 def adapt_text(text: str, profile_label: str, output_format: str) -> Tuple[str, Dict[str, Any]]:
     if not text or not text.strip():
-        return "Please paste text before adapting.", {"transforms_applied": [], "processing_time_ms": 0}
+        return "Please paste text before adapting.", {
+            "transforms_applied": [],
+            "processing_time_ms": 0,
+        }
 
     bridge = NeuroBridge()
     bridge.set_profile(PROFILE_LABELS.get(profile_label, Profile.ADHD))
@@ -56,14 +59,18 @@ def adapt_text(text: str, profile_label: str, output_format: str) -> Tuple[str, 
 
     adapted = response.adapted_text
     if output_format == "JSON":
-        rendered = "```json\n" + json.dumps(
-            {
-                "profile": profile_label,
-                "adapted_text": adapted,
-            },
-            ensure_ascii=True,
-            indent=2,
-        ) + "\n```"
+        rendered = (
+            "```json\n"
+            + json.dumps(
+                {
+                    "profile": profile_label,
+                    "adapted_text": adapted,
+                },
+                ensure_ascii=True,
+                indent=2,
+            )
+            + "\n```"
+        )
     elif output_format == "Plain Text":
         rendered = adapted
     else:
@@ -78,7 +85,7 @@ def adapt_text(text: str, profile_label: str, output_format: str) -> Tuple[str, 
 
 def _code_template(profile_label: str) -> str:
     enum_name = profile_label.upper()
-    return f'''from neurobridge import NeuroBridge, Profile
+    return f"""from neurobridge import NeuroBridge, Profile
 
 text = "Explain this release plan with clear steps and calm tone."
 
@@ -88,7 +95,7 @@ bridge.set_profile(Profile.{enum_name})
 response = bridge.chat(text)
 print(response.adapted_text)
 print(response.modules_run)
-'''
+"""
 
 
 def code_for_profile(profile_label: str) -> str:
@@ -203,7 +210,9 @@ def build_app() -> gr.Blocks:
                         "warning": "#E89BA4",
                     },
                 )
-                quiz_btn.click(fn=score_quiz, inputs=list(radios), outputs=[quiz_summary, quiz_highlight])
+                quiz_btn.click(
+                    fn=score_quiz, inputs=list(radios), outputs=[quiz_summary, quiz_highlight]
+                )
 
             with gr.Tab("Code Example"):
                 code_profile = gr.Radio(
@@ -216,7 +225,9 @@ def build_app() -> gr.Blocks:
                     language="python",
                     label="10-line integration example",
                 )
-                code_profile.change(fn=code_for_profile, inputs=[code_profile], outputs=[code_block])
+                code_profile.change(
+                    fn=code_for_profile, inputs=[code_profile], outputs=[code_block]
+                )
 
         gr.Markdown(
             "### Links\n"

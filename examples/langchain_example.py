@@ -35,7 +35,9 @@ def basic_output_parser_example() -> None:
 
 
 def callback_handler_example() -> None:
-    handler = NeuroBridgeCallbackHandler(profile=Profile.ANXIETY, config=Config(memory_backend="none"))
+    handler = NeuroBridgeCallbackHandler(
+        profile=Profile.ANXIETY, config=Config(memory_backend="none")
+    )
 
     class _Result:
         def __init__(self) -> None:
