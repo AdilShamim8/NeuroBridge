@@ -135,11 +135,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._ip_requests: defaultdict[str, deque[datetime]] = defaultdict(deque)
         self._key_requests: defaultdict[str, deque[datetime]] = defaultdict(deque)
 
-    def _prune_stale(self, table: defaultdict[str, deque[datetime]], window_start: datetime) -> None:
+    def _prune_stale(
+        self, table: defaultdict[str, deque[datetime]], window_start: datetime
+    ) -> None:
         """Drop identities whose queues are entirely outside the window."""
         if len(table) <= self.MAX_TRACKED_IDENTITIES:
             return
-        stale = [identity for identity, queue in table.items() if not queue or queue[-1] < window_start]
+        stale = [
+            identity for identity, queue in table.items() if not queue or queue[-1] < window_start
+        ]
         for identity in stale:
             del table[identity]
 
