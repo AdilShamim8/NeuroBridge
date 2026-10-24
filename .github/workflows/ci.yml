@@ -128,11 +128,5 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev,server]"
 
-      - name: Start FastAPI server
-        shell: bash
-        run: |
-          uvicorn neurobridge.server.app:create_app --factory --host 127.0.0.1 --port 8000 &
-          sleep 5
-
       - name: Run API tests
-        run: pytest -q tests/server/test_api.py
+        run: pytest -q tests/server/
