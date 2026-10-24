@@ -235,3 +235,35 @@ def test_pipeline_does_not_warn_on_expected_no_ops() -> None:
         w for w in caught if "produced no changes" in str(w.message)
     ]
     assert noop_warnings == []
+
+
+def test_sentence_tokenizer_keeps_markup_fragments_attached() -> None:
+    """Regression: the fallback tokenizer split '**Bold text.**' into
+    ['**Bold text.', '**'], which later modules rejoined with spaces,
+    producing '**Bold text. **' with the closing marker detached."""
+    from neurobridge.core.transform import _safe_sent_tokenize
+
+    sentences = _safe_sent_tokenize("**Bold intro.** Plain second sentence.")
+    assert any(s.startswith("**") and s.endswith("**") for s in sentences)
+    for sentence in sentences:
+        assert sentence.strip() != "**"
+
+
+def test_adhd_pipeline_keeps_code_fences_at_line_start() -> None:
+    """Regression: PriorityReorderer prefixed 'Background: ' onto paragraphs
+    that are code fences; a fence not at the start of a line is not a fence
+    in CommonMark, so the code block stopped rendering."""
+    bridge = NeuroBridge(config=Config(memory_backend="none"))
+    bridge.set_profile(Profile.ADHD)
+    adapted = bridge.adapt(
+        "Intro paragraph.\n\n```python\nprint(1)\n```\n\nAfter the code block."
+    )
+
+    assert adapted.count("**") % 2 == 0
+    assert "****" not in adapted
+    for line in adapted.splitlines():
+        if "```" in line:
+            # Every fence must sit at the start of its line (labels go on the
+            # line above), and closing fences must not carry an info string.
+            assert line.lstrip().startswith("```")
+            assert "Background: ```" not in line

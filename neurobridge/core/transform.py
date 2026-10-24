@@ -189,20 +189,58 @@ _DATA_CONTEXTS: dict[str, str] = {
 }
 
 
+def _merge_markup_fragments(sentences: list[str]) -> list[str]:
+    """Re-attach tokenizer fragments that orphaned Markdown emphasis markers.
+
+    The fallback tokenizer splits at sentence punctuation, so a bolded sentence
+    like '**Bold text.** More.' becomes ['**Bold text.', '** More.']: the closing
+    '**' looks like it belongs to the next sentence. Track bold parity across
+    fragments to decide whether a leading '**' closes the previous fragment
+    (parity odd) or opens the current one (parity even), and re-glue standalone
+    wordless fragments (for example a lone '**') to their neighbour.
+    """
+    if not sentences:
+        return []
+    merged: list[str] = [sentences[0]]
+    parity = sentences[0].count("**") % 2  # 1 == currently inside a bold span
+    for fragment in sentences[1:]:
+        if not _WORD_RE.search(fragment):
+            merged[-1] += fragment
+            parity = (parity + fragment.count("**")) % 2
+            continue
+        if parity == 1 and fragment.startswith("**"):
+            merged[-1] += "**"
+            fragment = fragment[2:].lstrip()
+            parity = 0
+        merged.append(fragment)
+        parity = (parity + fragment.count("**")) % 2
+    return merged
+
+
 def _safe_sent_tokenize(text: str) -> list[str]:
     """Tokenize sentences using NLTK with a regex fallback if punkt is unavailable."""
     if not text.strip():
         return []
     if _nltk_sent_tokenize is None:
-        return [
-            segment.strip() for segment in _SENTENCE_FALLBACK_RE.findall(text) if segment.strip()
-        ]
+        return _merge_markup_fragments(
+            [
+                segment.strip()
+                for segment in _SENTENCE_FALLBACK_RE.findall(text)
+                if segment.strip()
+            ]
+        )
     try:
-        return [segment.strip() for segment in _nltk_sent_tokenize(text) if segment.strip()]
+        return _merge_markup_fragments(
+            [segment.strip() for segment in _nltk_sent_tokenize(text) if segment.strip()]
+        )
     except LookupError:
-        return [
-            segment.strip() for segment in _SENTENCE_FALLBACK_RE.findall(text) if segment.strip()
-        ]
+        return _merge_markup_fragments(
+            [
+                segment.strip()
+                for segment in _SENTENCE_FALLBACK_RE.findall(text)
+                if segment.strip()
+            ]
+        )
 
 
 def _sentence_word_count(sentence: str) -> int:
@@ -759,9 +797,9 @@ class PriorityReorderer(BaseTransformModule):
             if kind == "conclusion":
                 conclusions.append(f"Summary: {paragraph}")
             elif kind == "example":
-                examples.append(f"Example: {paragraph}")
+                examples.append(self._label("Example", paragraph))
             else:
-                backgrounds.append(f"Background: {paragraph}")
+                backgrounds.append(self._label("Background", paragraph))
                 last_paragraph_is_background = index == len(paragraphs) - 1
 
         result: list[str] = []
@@ -777,14 +815,26 @@ class PriorityReorderer(BaseTransformModule):
             remainder = self._strip_leading_sentence(paragraphs[-1])
             if last_paragraph_is_background:
                 if remainder:
-                    backgrounds[-1] = f"Background: {remainder}"
+                    backgrounds[-1] = self._label("Background", remainder)
                 else:
                     backgrounds.pop()
             elif remainder:
-                result.append(f"Background: {remainder}")
+                result.append(self._label("Background", remainder))
         result.extend(backgrounds)
         result.extend(examples)
         return "\n\n".join(result).strip()
+
+    @staticmethod
+    def _label(label: str, paragraph: str) -> str:
+        """Prefix a paragraph with a scanning label.
+
+        Code fences must start at the beginning of a line to be recognized by
+        CommonMark renderers, so for fenced paragraphs the label goes on its
+        own line instead of sharing one with the fence.
+        """
+        if paragraph.lstrip().startswith("```"):
+            return f"{label}:\n{paragraph}"
+        return f"{label}: {paragraph}"
 
     @staticmethod
     def _strip_emphasis(text: str) -> str:
