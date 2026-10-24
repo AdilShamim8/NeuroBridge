@@ -8,6 +8,16 @@ This project currently supports the latest main branch for security fixes.
 
 Please report vulnerabilities privately and do not open a public issue for active security problems.
 
+**How to report (in order of preference):**
+
+1. GitHub **private vulnerability reporting**: open
+   https://github.com/AdilShamim8/NeuroBridge/security/advisories/new
+   and click "Report a vulnerability" (recommended - it keeps the report,
+   discussion, and fixes attached to this repository).
+2. Email the maintainer at the address listed on the
+   [GitHub profile](https://github.com/AdilShamim8) with `[NeuroBridge security]`
+   in the subject.
+
 Include:
 - Affected component(s)
 - Reproduction steps
@@ -18,6 +28,15 @@ Disclosure target:
 - Initial acknowledgement: within 3 business days
 - Triage update: within 7 business days
 - Mitigation plan or fix timeline: within 14 business days
+
+## Shipped ML Artifact
+
+The package ships `neurobridge/ml/model.pkl`, a joblib-serialized
+scikit-learn model loaded by `ProfileDetector`. Unpickling a replaced or
+tampered `.pkl` file can execute arbitrary code: only use artifacts built by
+`neurobridge.ml.trainer` from a trusted checkout, and treat the file as
+integrity-sensitive if you redistribute it. Do not point the package at
+model files from untrusted sources.
 
 ## Security Scope
 
