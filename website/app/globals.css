@@ -4,7 +4,8 @@
 
 :root {
   color-scheme: light;
-  --focus-ring: #7f77dd;
+  /* Matches the darkened brand-primary in tailwind.config.ts (WCAG AA). */
+  --focus-ring: #7169c4;
 }
 
 html,

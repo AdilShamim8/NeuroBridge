@@ -12,8 +12,11 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          primary: "#7F77DD",
-          secondary: "#1D9E75",
+          // Darkened from #7F77DD / #1D9E75 so white text on these colors
+          // meets WCAG AA (4.5:1) - verified by the axe audit; the originals
+          // measured 3.76:1 and 3.39:1.
+          primary: "#7169C4",
+          secondary: "#188462",
           ink: "#14131F",
           mist: "#F2F0FF",
           slate: "#5B5C70"

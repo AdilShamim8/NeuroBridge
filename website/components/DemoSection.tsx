@@ -41,11 +41,19 @@ export function DemoSection() {
     <section className="mt-16 grid gap-4 lg:grid-cols-2">
       <Card>
         <p className="text-sm font-bold text-brand-slate">Live mini-demo</p>
+        <label htmlFor="demo-input" className="mt-3 block text-sm font-semibold text-brand-ink">
+          Text to adapt
+        </label>
         <textarea
+          id="demo-input"
+          aria-describedby="demo-input-help"
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          className="mt-3 min-h-[140px] w-full rounded-xl border border-black/10 p-3"
+          className="mt-1 min-h-[140px] w-full rounded-xl border border-black/10 p-3"
         />
+        <p id="demo-input-help" className="mt-1 text-xs text-brand-slate">
+          Pick a profile below - the text adapts live.
+        </p>
         <div className="mt-2 text-right text-xs text-brand-slate">{chars} chars</div>
         <div className="mt-3 flex flex-wrap gap-2">
           {profiles.map((item) => (

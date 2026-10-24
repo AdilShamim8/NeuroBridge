@@ -66,7 +66,7 @@ export function DocsShell({ docs, headings, children }: DocsShellProps) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,720px)_220px]">
-      <aside className="hidden lg:block">
+      <aside aria-label="Documentation sections" className="hidden lg:block">
         <DocsNav
           query={query}
           setQuery={setQuery}
@@ -85,7 +85,7 @@ export function DocsShell({ docs, headings, children }: DocsShellProps) {
         </button>
       </div>
 
-      <aside className="lg:hidden">
+      <aside aria-label="On this page" className="lg:hidden">
         <div className="rounded-2xl border border-black/10 bg-white/80 p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-brand-slate">On this page</p>
           <ul className="mt-2 space-y-2 text-sm">
@@ -127,7 +127,7 @@ export function DocsShell({ docs, headings, children }: DocsShellProps) {
 
       <section className="min-w-0">{children}</section>
 
-      <aside className="hidden lg:block">
+      <aside aria-label="On this page" className="hidden lg:block">
         <div className="sticky top-20 rounded-2xl border border-black/10 bg-white/80 p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-brand-slate">On this page</p>
           <ul className="mt-2 space-y-2 text-sm">
