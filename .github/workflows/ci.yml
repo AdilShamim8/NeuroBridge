@@ -127,6 +127,12 @@ jobs:
       - name: Build
         run: npx next build
 
+      - name: Install headless Chromium for a11y audit
+        run: npx playwright install chromium --with-deps
+
+      - name: Accessibility audit (axe-core)
+        run: npm run a11y:ci
+
   test-integrations:
     name: Integration tests (${{ matrix.os }}, py${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
