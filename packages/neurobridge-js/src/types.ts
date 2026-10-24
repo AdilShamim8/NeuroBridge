@@ -10,7 +10,7 @@ export enum Profile {
 export type ToneMode = "calm" | "neutral" | "clear" | "supportive" | "energetic";
 export type AmbiguityResolution = "explicit" | "balanced" | "literal";
 export type NumberFormat = "contextual" | "raw" | "visual";
-export type LeadingStyle = "summary_first" | "stepwise" | "literal_first";
+export type LeadingStyle = "summary_first" | "stepwise" | "detail_first" | "reassure_first" | "literal_first";
 
 export interface ProfileConfig {
   chunkSize: number;
