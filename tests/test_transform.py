@@ -1,5 +1,6 @@
 """Day 2 tests for Chunker, SentenceSimplifier, and TransformPipeline."""
 
+from neurobridge.core.bridge import Config, NeuroBridge
 from neurobridge.core.profile import Profile, get_profile_config
 from neurobridge.core.transform import Chunker, SentenceSimplifier, TransformPipeline
 
@@ -11,11 +12,27 @@ def test_pipeline_auto_registers_day2_modules() -> None:
     assert names == [
         "chunker",
         "sentence_simplifier",
-        "tone_rewriter",
         "urgency_filter",
+        "tone_rewriter",
         "number_contextualiser",
         "priority_reorderer",
     ]
+
+
+def test_anxiety_pipeline_softens_urgency_end_to_end() -> None:
+    """Regression: tone_rewriter used to neutralize urgency words before the
+    urgency filter could score them, so raw urgency signals like "NOW!" and
+    "must" survived the full anxiety pipeline untouched."""
+    bridge = NeuroBridge(config=Config(memory_backend="none"))
+    bridge.set_profile(Profile.ANXIETY)
+    adapted = bridge.adapt("You must fix this NOW! It is urgent and critical to submit immediately.")
+
+    assert "NOW!" not in adapted
+    assert "must fix" not in adapted.lower()
+    # The urgency vocabulary has to be rewritten, not merely re-scored.
+    assert "urgent" not in adapted.lower() or "worth noting" in adapted.lower()
+    # Calm-note softening should engage for clearly urgent sentences.
+    assert "calm note" in adapted.lower()
 
 
 def test_chunker_empty_text_returns_empty() -> None:

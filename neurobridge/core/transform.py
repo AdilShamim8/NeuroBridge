@@ -797,8 +797,12 @@ class TransformPipeline:
         if not self.modules:
             self.register(Chunker())
             self.register(SentenceSimplifier())
-            self.register(ToneRewriter())
+            # UrgencyFilter must run before ToneRewriter: the tone rewriter rewrites
+            # urgency vocabulary ("must", "urgent", "critical", "ASAP", ...) into
+            # softer words, which would starve the urgency scorer of the very
+            # signals it is supposed to measure.
             self.register(UrgencyFilter())
+            self.register(ToneRewriter())
             self.register(NumberContextualiser())
             self.register(PriorityReorderer())
 
