@@ -79,11 +79,17 @@ include-package-data = true
 include = ["neurobridge*"]
 
 [tool.setuptools.package-data]
-neurobridge = ["data/*.json", "ml/*.pkl", "ml/data/synthetic/*.json"]
+neurobridge = ["data/*.json", "ml/*.pkl", "ml/*.pkl.meta.json"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+filterwarnings = [
+    # Upstream: typer 0.x still imports click stream helpers removed in Click 9.
+    # Tracked upstream; nothing for this package to act on until typer ships a fix.
+    "ignore: 'click.utils.get_binary_stream' is deprecated:DeprecationWarning",
+    "ignore: 'click.utils.get_text_stream' is deprecated:DeprecationWarning",
+]
 
 [tool.black]
 line-length = 100
