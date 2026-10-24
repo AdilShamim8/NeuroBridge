@@ -78,9 +78,7 @@ class InteractionTracker:
         if not result.fallback_to_quiz and result.confidence >= self.update_threshold:
             self._set_profile_from_label(result.profile)
             if self.bridge.memory_store is not None:
-                self.bridge.memory_store.save_profile(
-                    user_id, self.bridge._profile_config
-                )
+                self.bridge.memory_store.save_profile(user_id, self.bridge._profile_config)
 
         return result
 

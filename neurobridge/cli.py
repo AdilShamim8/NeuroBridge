@@ -93,9 +93,7 @@ def serve(
 
 @app.command("quiz")
 def quiz(
-    user_id: str | None = typer.Option(
-        None, "--user-id", help="Optional user id for persistence"
-    ),
+    user_id: str | None = typer.Option(None, "--user-id", help="Optional user id for persistence"),
     save: bool = typer.Option(False, "--save", help="Persist recommended config for user_id"),
 ) -> None:
     """Run ProfileQuiz in terminal and optionally save result."""

@@ -41,9 +41,7 @@ def set_profile(payload: ProfileSetRequest, request: Request):
             ) from exc
         bridge.set_profile(profile)
         if bridge.memory_store is not None:
-            bridge.memory_store.save_profile(
-                payload.user_id, bridge._profile_config
-            )
+            bridge.memory_store.save_profile(payload.user_id, bridge._profile_config)
         profile_name = profile.value
         config_dict = asdict(bridge._profile_config)
 

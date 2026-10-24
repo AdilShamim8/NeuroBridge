@@ -275,8 +275,10 @@ class RedisMemoryStore(BaseMemoryStore):
 
     def __init__(self, redis_url: str, fallback_store: InMemoryStore | None = None) -> None:
         self._fallback = fallback_store or InMemoryStore()
-        self._redis = None
-        self._pool = None
+        # Duck-typed on purpose: holds a redis.Redis client in production and test
+        # doubles in the test suite, and the redis-py stubs union sync/async returns.
+        self._redis: Any = None
+        self._pool: Any = None
         try:
             import redis  # type: ignore
 
