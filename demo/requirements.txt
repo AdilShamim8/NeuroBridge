@@ -1,2 +1,3 @@
-neurobridge
+# NeuroBridge is not yet on PyPI; install from the repository.
+neurobridge @ git+https://github.com/AdilShamim8/NeuroBridge.git
 gradio>=4.0
