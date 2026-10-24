@@ -364,15 +364,11 @@ def test_quiz_out_of_range_answer_returns_400_not_500() -> None:
     questions = client.get("/api/v1/quiz/questions").json()["questions"]
     valid = {q["id"]: "0" for q in questions}
     valid["q1"] = "99"
-    response = client.post(
-        "/api/v1/quiz/submit", json={"answers": valid, "user_id": "quiz-user"}
-    )
+    response = client.post("/api/v1/quiz/submit", json={"answers": valid, "user_id": "quiz-user"})
     assert response.status_code == 400
 
     valid["q1"] = "-1"
-    response = client.post(
-        "/api/v1/quiz/submit", json={"answers": valid, "user_id": "quiz-user"}
-    )
+    response = client.post("/api/v1/quiz/submit", json={"answers": valid, "user_id": "quiz-user"})
     assert response.status_code == 400
 
 
@@ -393,3 +389,40 @@ def test_invalid_path_user_id_returns_422_not_500(tmp_path) -> None:
 
     got = client.get("/api/v1/profile/bad%20id")
     assert got.status_code == 422
+
+
+def test_chunked_body_size_limit_is_enforced() -> None:
+    """Regression: RequestSizeLimitMiddleware only inspected Content-Length, so
+    chunked transfer-encoding bypassed the cap entirely."""
+    import httpx
+
+    from neurobridge.server.app import create_app
+    from neurobridge.server.config import ServerConfig
+
+    app = create_app(
+        config=Config(memory_backend="none"),
+        server_config=ServerConfig(
+            allowed_origins=["*"], rate_limit_per_minute=1000, max_request_size_bytes=64
+        ),
+    )
+    async def run() -> int:
+        import json as _json
+
+        payload = _json.dumps({"text": "x" * 200}).encode()
+
+        async def chunked():
+            yield payload[:64]
+            yield payload[64:]
+
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            # A generator body forces chunked transfer-encoding: no
+            # Content-Length header is ever sent.
+            response = await client.post(
+                "/api/v1/adapt",
+                content=chunked(),
+                headers={"content-type": "application/json"},
+            )
+            return response.status_code
+
+    assert asyncio.run(run()) == 413

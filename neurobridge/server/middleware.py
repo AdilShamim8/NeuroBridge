@@ -79,6 +79,17 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
                     status_code=413,
                     content={"detail": f"Request payload too large (max {self.max_bytes} bytes)"},
                 )
+            return await call_next(request)
+
+        # No Content-Length (chunked transfer-encoding): the header check alone
+        # is bypassable, so read the body (Starlette caches it for downstream)
+        # and enforce the same cap on the actual bytes.
+        body = await request.body()
+        if len(body) > self.max_bytes:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": f"Request payload too large (max {self.max_bytes} bytes)"},
+            )
         return await call_next(request)
 
 
