@@ -73,3 +73,15 @@ def test_sanitize_key_token_and_contains_any_token() -> None:
 
     assert contains_any_token("This has Critical priority", ["critical", "none"])
     assert not contains_any_token("safe text", ["critical", "urgent"])
+
+
+def test_sanitize_key_tokens_are_collision_free() -> None:
+    """Regression: plain sanitization mapped distinct identifiers onto the same
+    Redis key ('user:1' and 'user_1' both became 'user_1'), mixing two users'
+    stored profiles and feedback."""
+    from neurobridge.core.validators import sanitize_key_token
+
+    assert sanitize_key_token("user:1") != sanitize_key_token("user_1")
+    assert sanitize_key_token("a b") != sanitize_key_token("a_b")
+    assert sanitize_key_token("user-x") == sanitize_key_token("user-x")
+    assert all(len(sanitize_key_token(v)) <= 128 for v in ["x" * 500, "user:1", ""])

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import warnings
 import sqlite3
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass
@@ -285,8 +286,20 @@ class RedisMemoryStore(BaseMemoryStore):
             self._pool = redis.ConnectionPool.from_url(redis_url, decode_responses=True)
             self._redis = redis.Redis(connection_pool=self._pool)
             self._redis.ping()
-        except Exception:  # noqa: BLE001 - any redis/client failure degrades to fallback store
+        except Exception as exc:  # noqa: BLE001 - any redis/client failure degrades to fallback store
+            # Degrading silently created a persistence illusion: callers believed
+            # they had durable Redis storage while data lived in a per-process
+            # in-memory copy. Make the degradation visible.
             self._redis = None
+            self._fallback_reason = str(exc)
+            warnings.warn(
+                "Redis unavailable, falling back to a non-persistent in-memory store: "
+                f"{exc}",
+                UserWarning,
+                stacklevel=2,
+            )
+        else:
+            self._fallback_reason = None
 
     @staticmethod
     def _profile_key(user_id: str) -> str:
@@ -339,8 +352,9 @@ class RedisMemoryStore(BaseMemoryStore):
             feedback_key = self._feedback_key(record.user_id, record.interaction_id)
             index_key = self._feedback_index_key(record.user_id)
             pipe = self._redis.pipeline(transaction=True)
-            pipe.set(feedback_key, payload)
+            pipe.set(feedback_key, payload, ex=self.PROFILE_TTL_SECONDS)
             pipe.rpush(index_key, record.interaction_id)
+            pipe.expire(index_key, self.PROFILE_TTL_SECONDS)
             pipe.execute()
         except Exception:  # noqa: BLE001 - redis outage must not fail user-facing reads/writes
             return
@@ -376,6 +390,7 @@ class RedisMemoryStore(BaseMemoryStore):
             return fallback_count
         try:
             value = self._redis.incr(self._interaction_key(user_id))
+            self._redis.expire(self._interaction_key(user_id), self.PROFILE_TTL_SECONDS)
             return int(value)
         except Exception:  # noqa: BLE001 - redis outage must not fail user-facing reads/writes
             return fallback_count

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 from collections.abc import Iterable
 
@@ -58,8 +59,17 @@ def validate_profile_config_ranges(
 
 
 def sanitize_key_token(value: str) -> str:
-    token = re.sub(r"[^A-Za-z0-9_-]", "_", value)
-    return token[:MAX_USER_ID_LENGTH]
+    """Build a deterministic, collision-free Redis key token.
+
+    Plain sanitization mapped distinct identifiers onto the same token
+    ('user:1' and 'user_1' both became 'user_1'), which let two different
+    users share stored profiles and feedback in Redis. Hashing the original
+    value preserves uniqueness; the readable prefix keeps keys debuggable in
+    redis-cli.
+    """
+    digest = hashlib.sha256(value.encode()).hexdigest()[:16]
+    readable = re.sub(r"[^A-Za-z0-9_-]", "_", value)[:MAX_USER_ID_LENGTH - 17]
+    return f"{readable}.{digest}"
 
 
 def contains_any_token(text: str, tokens: Iterable[str]) -> bool:

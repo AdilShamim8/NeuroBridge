@@ -68,3 +68,19 @@ def test_feedback_analyser_detects_expansion_signal() -> None:
     result = analyser.analyse_feedback("u2", store)
     assert result.chunk_size_delta >= 0
     assert "detail" in result.reason.lower() or "expand" in result.reason.lower()
+
+
+def test_redis_fallback_warns_instead_of_silent_degradation() -> None:
+    """Regression: a failed Redis connection silently degraded to a
+    non-persistent in-memory store, creating a persistence illusion."""
+    import warnings as _warnings
+
+    with _warnings.catch_warnings(record=True) as caught:
+        _warnings.simplefilter("always")
+        store = RedisMemoryStore("redis://localhost:59999/0")  # nothing listening
+
+    assert any("Redis unavailable" in str(w.message) for w in caught)
+    # The store still works through the fallback.
+    profile = get_profile_config(Profile.ADHD)
+    store.save_profile("user-w", profile)
+    assert store.load_profile("user-w") == profile
