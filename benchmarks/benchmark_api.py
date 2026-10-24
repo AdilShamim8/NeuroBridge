@@ -17,22 +17,36 @@ def main() -> None:
         server_config=ServerConfig(allowed_origins=["*"], rate_limit_per_minute=10_000),
     )
     client = TestClient(app)
-    payload = {"text": " ".join(["This is a sample API benchmark sentence."] * 120)}
 
-    runs = 200
-    start = perf_counter()
-    success = 0
-    for _ in range(runs):
+    warmup = 10
+    runs = 100
+    # Unique payloads defeat the transform cache; the in-process ASGI transport
+    # measures app overhead without network/uvicorn.
+    for index in range(warmup):
+        client.post("/api/v1/adapt", json={"text": f"warmup {index} " + "sample sentence " * 120})
+
+    samples: list[float] = []
+    for index in range(runs):
+        payload = {"text": f"run {index} " + "This is a sample API benchmark sentence. " * 120}
+        start = perf_counter()
         response = client.post("/api/v1/adapt", json=payload)
-        if response.status_code == 200:
-            success += 1
-    elapsed = perf_counter() - start
+        elapsed = (perf_counter() - start) * 1000
+        if response.status_code != 200:
+            raise SystemExit(f"unexpected status {response.status_code}")
+        samples.append(elapsed)
 
-    print("benchmark_api")
-    print(f"runs={runs}")
-    print(f"success={success}")
-    print(f"total_s={elapsed:.4f}")
-    print(f"avg_ms={(elapsed / runs) * 1000:.2f}")
+    samples.sort()
+
+    def pct(fraction: float) -> float:
+        pos = min(len(samples) - 1, int(round(fraction * (len(samples) - 1))))
+        return samples[pos]
+
+    print("benchmark_api (in-process ASGI transport, no network/uvicorn)")
+    print(f"runs={runs} warmup={warmup} unique_payloads=yes")
+    print(f"avg_ms={sum(samples) / runs:.2f}")
+    print(f"p50_ms={pct(0.50):.2f}")
+    print(f"p95_ms={pct(0.95):.2f}")
+    print(f"p99_ms={pct(0.99):.2f}")
 
 
 if __name__ == "__main__":

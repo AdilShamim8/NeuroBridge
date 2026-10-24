@@ -32,7 +32,11 @@ def _run_store(name: str, store, loops: int = 1000) -> None:
 def main() -> None:
     print("benchmark_memory")
     _run_store("inmemory", InMemoryStore())
-    _run_store("redis-fallback", RedisMemoryStore("redis://localhost:6399/0"))
+    store = RedisMemoryStore("redis://localhost:6399/0")
+    # The constructor warns and falls back when no Redis is listening; report
+    # which backend the numbers actually measured instead of implying Redis.
+    backend = "redis" if store._redis is not None else "in-memory fallback (no redis server)"
+    _run_store(f"redis-store [{backend}]", store)
 
 
 if __name__ == "__main__":
