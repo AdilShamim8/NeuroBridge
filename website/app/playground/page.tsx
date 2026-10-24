@@ -71,8 +71,25 @@ const SHOWCASE = [
   }
 ];
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Convert a small markdown subset to HTML.
+ *
+ * Input is HTML-escaped first: adapted text is model/user controlled and is
+ * also rendered on the shared-link page, so injecting raw markup would be a
+ * stored XSS vector. Only the tags this function itself generates ever reach
+ * the DOM.
+ */
 function markdownToHtml(markdown: string): string {
-  return markdown
+  return escapeHtml(markdown)
     .replace(/^### (.*)$/gim, "<h3>$1</h3>")
     .replace(/^## (.*)$/gim, "<h2>$1</h2>")
     .replace(/^# (.*)$/gim, "<h1>$1</h1>")
@@ -538,7 +555,11 @@ export default function PlaygroundPage() {
                 {tab === "adapted" ? (
                   <div className="text-sm leading-7 text-brand-ink">
                     {outputFormat === "html" ? (
-                      <div dangerouslySetInnerHTML={{ __html: adaptedText || "<p>Adapted output will appear here.</p>" }} />
+                      <div
+                          dangerouslySetInnerHTML={{
+                            __html: escapeHtml(adaptedText || "Adapted output will appear here.")
+                          }}
+                        />
                     ) : outputFormat === "json" ? (
                       <pre className="overflow-x-auto rounded-lg bg-brand-ink p-4 font-mono text-xs text-white">
                         {adaptedText || "{\n  \"adapted\": \"\"\n}"}

@@ -75,9 +75,22 @@ export async function POST(req: NextRequest) {
 
     const result = await response.json();
     if (!response.ok) {
-      return NextResponse.json({ error: result?.detail || "Backend adaptation failed" }, { status: response.status });
+      return NextResponse.json(
+        { error: result?.detail || "Backend adaptation failed" },
+        { status: response.status }
+      );
     }
-    return NextResponse.json(result);
+    // The Python server responds with original_text / transforms_applied /
+    // processing_time_ms / profile_used. Normalize to the canonical shape the
+    // frontend consumes so the playground works identically with and without a
+    // backend configured.
+    return NextResponse.json({
+      raw_text: result.original_text ?? text,
+      adapted_text: result.adapted_text ?? "",
+      modules_run: result.transforms_applied ?? [],
+      processing_ms: result.processing_time_ms ?? 0,
+      profile: result.profile_used ?? profile
+    });
   } catch {
     return NextResponse.json({ error: "Unable to reach NeuroBridge API." }, { status: 502 });
   }
