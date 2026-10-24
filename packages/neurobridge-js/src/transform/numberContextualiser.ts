@@ -1,5 +1,6 @@
 import { Profile, ProfileConfig, TransformModule } from "../types";
 import { contextualizeNumbers } from "./numbers";
+import { mapUnprotectedRegions } from "./protect";
 
 export class NumberContextualiser implements TransformModule {
   public readonly name = "NumberContextualiser";
@@ -8,6 +9,6 @@ export class NumberContextualiser implements TransformModule {
     if (profileId !== Profile.DYSCALCULIA) {
       return text;
     }
-    return contextualizeNumbers(text);
+    return mapUnprotectedRegions(text, contextualizeNumbers);
   }
 }

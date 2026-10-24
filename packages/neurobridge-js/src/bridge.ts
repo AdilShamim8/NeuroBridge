@@ -4,7 +4,8 @@ import {
   NumberContextualiser,
   PriorityReorderer,
   SentenceSimplifier,
-  ToneRewriter
+  ToneRewriter,
+  UrgencyFilter
 } from "./transform";
 import { AdaptedResponse, NeuroBridgeConfig, Profile, ProfileConfig, TransformModule } from "./types";
 
@@ -22,10 +23,14 @@ export class NeuroBridge {
       memoryBackend: config.memoryBackend ?? "none"
     };
 
-    // Module order mirrors the Python pipeline.
+    // Module order mirrors the Python pipeline. UrgencyFilter runs before
+    // ToneRewriter for the same reason as in Python: the tone rewriter rewrites
+    // urgency vocabulary into softer words, which would starve the urgency
+    // scorer of the very signals it is supposed to measure.
     this.modules = [
       new Chunker(),
       new SentenceSimplifier(),
+      new UrgencyFilter(),
       new ToneRewriter(),
       new NumberContextualiser(),
       new PriorityReorderer()

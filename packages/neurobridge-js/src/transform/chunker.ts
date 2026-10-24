@@ -1,14 +1,6 @@
-import { split } from "sentence-splitter";
-
 import { Profile, ProfileConfig, TransformModule } from "../types";
-
-function sentenceText(input: string): string[] {
-  const nodes = split(input);
-  return nodes
-    .filter((node: unknown) => (node as { type?: string }).type === "Sentence")
-    .map((node: unknown) => String((node as { raw: string }).raw).trim())
-    .filter(Boolean);
-}
+import { protectRegions } from "./protect";
+import { splitSentences } from "./sentenceSimplifier";
 
 /** Bold the first 4-6 words of a chunk to create an attention anchor. */
 function boldAnchorWords(chunk: string): string {
@@ -41,20 +33,40 @@ export class Chunker implements TransformModule {
       separator = "\n\n\n";
     }
 
+    return protectRegions(text)
+      .map((region) => {
+        if (region.protected) {
+          return region.text;
+        }
+        if (!region.text.trim()) {
+          return region.text;
+        }
+        return this.chunkRegion(region.text, chunkSize, separator, profileId);
+      })
+      .join("")
+      .trim();
+  }
+
+  private chunkRegion(
+    text: string,
+    chunkSize: number,
+    separator: string,
+    profileId: Profile
+  ): string {
     return text
-      .split(/\n\n+/)
+      .split("\n\n")
       .map((paragraph) => {
-        const sentences = sentenceText(paragraph);
+        const sentences = splitSentences(paragraph);
         if (!sentences.length) return paragraph;
 
         const chunks: string[] = [];
         for (let i = 0; i < sentences.length; i += chunkSize) {
           chunks.push(sentences.slice(i, i + chunkSize).join(" "));
         }
-        const joined = chunks.join(separator);
-        return profileId === Profile.ADHD
-          ? chunks.map(boldAnchorWords).join(separator)
-          : joined;
+        if (profileId === Profile.ADHD) {
+          return chunks.map(boldAnchorWords).join(separator);
+        }
+        return chunks.join(separator);
       })
       .join(separator);
   }

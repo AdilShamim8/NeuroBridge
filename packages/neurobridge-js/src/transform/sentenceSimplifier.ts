@@ -1,4 +1,5 @@
 import { Profile, ProfileConfig, TransformModule } from "../types";
+import { protectRegions } from "./protect";
 
 const CONJUNCTION_DELIMITERS = [", and", ", but", ", which", ", that"];
 const WORD_RE = /\b\w+\b/g;
@@ -31,18 +32,33 @@ export class SentenceSimplifier implements TransformModule {
   public apply(text: string, profile: ProfileConfig, _profileId: Profile): string {
     if (!text.trim()) return "";
 
-    return text
-      .split(/\n\n+/)
-      .map((paragraph) => {
-        const sentences = splitSentences(paragraph);
-        if (!sentences.length) return paragraph;
-        const rebuilt: string[] = [];
-        for (const sentence of sentences) {
-          rebuilt.push(...this.simplifySentence(sentence, profile.maxSentenceWords));
-        }
-        return rebuilt.filter(Boolean).join(" ");
-      })
-      .join("\n\n");
+    return (
+      protectRegions(text)
+        .map((region) => {
+          if (region.protected) {
+            return region.text;
+          }
+          if (!region.text.trim()) {
+            return region.text;
+          }
+          // Simplify within each paragraph; never merge sentences across a
+          // paragraph boundary.
+          return region.text
+            .split("\n\n")
+            .map((paragraph) => {
+              const sentences = splitSentences(paragraph);
+              if (!sentences.length) return paragraph;
+              const rebuilt: string[] = [];
+              for (const sentence of sentences) {
+                rebuilt.push(...this.simplifySentence(sentence, profile.maxSentenceWords));
+              }
+              return rebuilt.filter(Boolean).join(" ");
+            })
+            .join("\n\n");
+        })
+        .join("")
+        .trim()
+    );
   }
 
   private simplifySentence(sentence: string, maxWords: number): string[] {
@@ -105,13 +121,24 @@ export class SentenceSimplifier implements TransformModule {
 }
 
 /**
+ * A period between two digits is part of a number (0.8, 1.2.3,
+ * 192.168.0.1), never a sentence boundary. Masking it before splitting keeps
+ * decimals, versions, and IP addresses whole - without this, "0.8%"
+ * tokenized as "0." + "8%" and the pipeline re-joined the pieces with a
+ * space, silently corrupting the value.
+ */
+const DECIMAL_DOT_RE = /(?<=\d)\.(?=\d)/g;
+const DECIMAL_DOT_PLACEHOLDER = "\u2063";
+
+/**
  * Lightweight sentence splitting at .!?, preserving newlines between
  * paragraphs (handled by the caller) and keeping markup fragments attached
  * to their sentence, mirroring the Python _merge_markup_fragments behavior
  * for the common bold-span case.
  */
 export function splitSentences(text: string): string[] {
-  const parts = text.split(/([.!?])/);
+  const protectedText = text.replace(DECIMAL_DOT_RE, DECIMAL_DOT_PLACEHOLDER);
+  const parts = protectedText.split(/([.!?])/);
   const raw: string[] = [];
   let current = "";
   for (let index = 0; index < parts.length; index += 1) {
@@ -146,5 +173,5 @@ export function splitSentences(text: string): string[] {
     }
     boldOpen = (fragment.split("**").length - 1) % 2 === 1;
   }
-  return merged;
+  return merged.map((sentence) => sentence.replace(/\u2063/g, "."));
 }
