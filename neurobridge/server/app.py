@@ -34,13 +34,6 @@ def create_app(config: Config | None = None, server_config: ServerConfig | None 
     app.state.bridge = NeuroBridge(config=cfg)
     app.state.server_config = srv_cfg
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=srv_cfg.allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
     app.add_middleware(RequestIdMiddleware)
     app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(RequestSizeLimitMiddleware, max_bytes=srv_cfg.max_request_size_bytes)
@@ -52,6 +45,17 @@ def create_app(config: Config | None = None, server_config: ServerConfig | None 
         per_key_per_minute=srv_cfg.api_key_rate_limit_per_minute,
     )
     app.add_middleware(ApiKeyMiddleware, api_key=srv_cfg.api_key, enabled=srv_cfg.require_api_key)
+    # Starlette runs the last-added middleware first (outermost). CORS must be
+    # the outermost layer so that preflight OPTIONS requests and auth/rate-limit
+    # rejections (401/429/504/413) all carry CORS headers; otherwise browsers
+    # cannot read the error responses at all.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=srv_cfg.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     app.include_router(health_router, prefix=srv_cfg.api_prefix)
     app.include_router(adapt_router, prefix=srv_cfg.api_prefix)

@@ -195,3 +195,102 @@ def test_get_profile_without_memory_backend_returns_404() -> None:
     client = TestClient(app)
     response = client.get("/api/v1/profile/missing")
     assert response.status_code == 404
+
+
+def test_cors_preflight_succeeds_with_api_key_enabled() -> None:
+    """Regression: CORSMiddleware was the innermost layer while ApiKeyMiddleware
+    was outermost, so browser preflight OPTIONS requests (which never carry
+    Authorization) got a bare 401 without CORS headers - browser clients could
+    not use the API at all when auth was on."""
+    from neurobridge.server.app import create_app
+    from neurobridge.server.config import ServerConfig
+
+    app = create_app(
+        config=Config(memory_backend="none"),
+        server_config=ServerConfig(
+            allowed_origins=["https://example.com"],
+            require_api_key=True,
+            api_key="secret-key-123",
+        ),
+    )
+    client = TestClient(app)
+
+    response = client.options(
+        "/api/v1/adapt",
+        headers={
+            "Origin": "https://example.com",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization,content-type",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers.get("access-control-allow-origin") == "https://example.com"
+
+
+def test_auth_rejections_carry_cors_headers() -> None:
+    """Even real 401s must be readable by browsers, so CORS headers have to be
+    attached to middleware-generated rejections."""
+    from neurobridge.server.app import create_app
+    from neurobridge.server.config import ServerConfig
+
+    app = create_app(
+        config=Config(memory_backend="none"),
+        server_config=ServerConfig(
+            allowed_origins=["https://example.com"],
+            require_api_key=True,
+            api_key="secret-key-123",
+        ),
+    )
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/adapt",
+        json={"text": "hello"},
+        headers={"Origin": "https://example.com"},
+    )
+    assert response.status_code == 401
+    assert response.headers.get("access-control-allow-origin") == "https://example.com"
+
+
+def test_api_key_identity_is_a_digest_not_the_secret() -> None:
+    """Regression: the middleware stored the first 12 characters of the API key
+    as the rate-limit identity, keeping a slice of the secret in request state."""
+    from neurobridge.server.middleware import ApiKeyMiddleware
+
+    async def run() -> str:
+        seen = {}
+
+        async def call_next(request):
+            seen["api_key_id"] = getattr(request.state, "api_key_id", None)
+            from starlette.responses import PlainTextResponse
+
+            return PlainTextResponse("ok")
+
+        middleware = ApiKeyMiddleware(
+            app=None, api_key="super-secret-value-do-not-leak", enabled=True
+        )
+
+        scope = {
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": [
+                (b"authorization", b"Bearer super-secret-value-do-not-leak"),
+            ],
+            "query_string": b"",
+        }
+
+        from starlette.datastructures import State
+        from starlette.requests import Request
+
+        request = Request(scope)
+        request._state = State()
+        await middleware.dispatch(request, call_next)
+        return seen["api_key_id"] or ""
+
+    import asyncio
+
+    identity = asyncio.run(run())
+    assert identity
+    assert "super-secret" not in identity
+    assert len(identity) == 16

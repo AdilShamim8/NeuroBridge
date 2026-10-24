@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
@@ -40,13 +42,21 @@ class ApiKeyMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):  # type: ignore[override]
         if not self.enabled:
             return await call_next(request)
+        # CORS preflights never carry Authorization; let the CORS middleware
+        # (outermost) answer them instead of rejecting with a bare 401.
+        if request.method == "OPTIONS":
+            return await call_next(request)
         auth_header = request.headers.get("Authorization", "")
         provided = ""
         if auth_header.startswith("Bearer "):
             provided = auth_header[7:].strip()
-        if provided != self.api_key:
+        # Constant-time comparison: a plain '!=' comparison leaks how many
+        # leading bytes of the key matched via response-timing differences.
+        if not hmac.compare_digest(provided, self.api_key):
             return JSONResponse(status_code=401, content={"detail": "Invalid API key"})
-        request.state.api_key_id = provided[:12] if provided else "unknown"
+        # Store only a stable digest of the key as the rate-limit identity:
+        # never keep the secret (or a slice of it) in memory or logs.
+        request.state.api_key_id = hashlib.sha256(provided.encode()).hexdigest()[:16]
         return await call_next(request)
 
 
