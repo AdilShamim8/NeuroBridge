@@ -748,8 +748,9 @@ class PriorityReorderer(BaseTransformModule):
         conclusions: list[str] = []
         backgrounds: list[str] = []
         examples: list[str] = []
+        last_paragraph_is_background = False
 
-        for paragraph in paragraphs:
+        for index, paragraph in enumerate(paragraphs):
             kind = self._classify_paragraph(paragraph)
             if kind == "conclusion":
                 conclusions.append(f"Summary: {paragraph}")
@@ -757,16 +758,41 @@ class PriorityReorderer(BaseTransformModule):
                 examples.append(f"Example: {paragraph}")
             else:
                 backgrounds.append(f"Background: {paragraph}")
+                last_paragraph_is_background = index == len(paragraphs) - 1
 
         result: list[str] = []
         if conclusions:
             result.extend(conclusions)
         else:
-            summary_sentence = self._extract_summary_sentence(paragraphs[-1])
+            # Pull the takeaway out of the last paragraph instead of duplicating
+            # it: the bottom line goes on top and the remaining sentences stay
+            # in the body. Anything already bolded by the chunker is unwrapped
+            # first so we never nest ** markers.
+            summary_sentence = self._strip_emphasis(self._extract_summary_sentence(paragraphs[-1]))
             result.append(f"**Bottom line: {summary_sentence}**")
+            remainder = self._strip_leading_sentence(paragraphs[-1])
+            if last_paragraph_is_background:
+                if remainder:
+                    backgrounds[-1] = f"Background: {remainder}"
+                else:
+                    backgrounds.pop()
+            elif remainder:
+                result.append(f"Background: {remainder}")
         result.extend(backgrounds)
         result.extend(examples)
         return "\n\n".join(result).strip()
+
+    @staticmethod
+    def _strip_emphasis(text: str) -> str:
+        return text.replace("**", "")
+
+    @staticmethod
+    def _strip_leading_sentence(paragraph: str) -> str:
+        sentences = _safe_sent_tokenize(paragraph)
+        if len(sentences) <= 1:
+            return ""
+        remainder = " ".join(sentences[1:]).strip()
+        return remainder or ""
 
     @staticmethod
     def _classify_paragraph(paragraph: str) -> str:
@@ -782,12 +808,7 @@ class PriorityReorderer(BaseTransformModule):
         sentences = _safe_sent_tokenize(paragraph)
         if sentences:
             return sentences[0]
-        trimmed = paragraph.strip()
-        return (
-            trimmed
-            if _NUMBER_TOKEN_RE.search(trimmed) or trimmed
-            else "Key details are provided below."
-        )
+        return paragraph.strip() or "Key details are provided below."
 
 
 @dataclass(slots=True)

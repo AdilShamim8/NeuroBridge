@@ -173,3 +173,33 @@ def test_urgency_filter_preserves_paragraph_breaks() -> None:
     )
 
     assert adapted.count("\n\n") >= 2
+
+
+def test_adhd_pipeline_does_not_duplicate_summary_paragraph() -> None:
+    """Regression: PriorityReorderer extracted the 'Bottom line' from the last
+    paragraph but also kept that paragraph in the body, emitting its content
+    twice for every ADHD adaptation without a conclusion-classified paragraph."""
+    bridge = NeuroBridge(config=Config(memory_backend="none"))
+    bridge.set_profile(Profile.ADHD)
+    adapted = bridge.adapt(
+        "First paragraph explains the background.\n\nSecond paragraph holds the closing thought."
+    )
+
+    # The last paragraph's first sentence becomes the bottom line, and the rest
+    # of the document appears exactly once.
+    assert "Bottom line" in adapted
+    assert adapted.count("Second paragraph holds the closing thought.") <= 1
+
+
+def test_adhd_pipeline_emits_balanced_bold_markers() -> None:
+    """Regression: the chunker bolds anchor words, and the reorderer wrapped the
+    (already bolded) summary sentence in another '**...**', producing nested and
+    unbalanced markup like '**Bottom line: **Second paragraph** text here.****'."""
+    bridge = NeuroBridge(config=Config(memory_backend="none"))
+    bridge.set_profile(Profile.ADHD)
+    adapted = bridge.adapt(
+        "First paragraph text.\n\nSecond paragraph text here with more words to say."
+    )
+
+    assert adapted.count("**") % 2 == 0
+    assert "****" not in adapted
