@@ -126,7 +126,9 @@ class HTMLAdapter(BaseFormatAdapter):
         for block_type, value in blocks:
             if block_type == "heading":
                 if in_list:
-                    rendered.append("</ul>")
+                    # The list was opened as <section><ul>: close both, or the
+                    # heading and every later section nest inside the list.
+                    rendered.append("</ul></section>")
                     in_list = False
                 rendered.append(f'<section><h2 aria-label="Heading">{escape(value)}</h2></section>')
                 continue
@@ -211,6 +213,10 @@ class JSONAdapter(BaseFormatAdapter):
 
     media_type = "application/json"
 
+    # Words per minute used for the reading-time estimate; 180 wpm is a common
+    # adult silent-reading average.
+    READING_WPM = 180
+
     def format(self, text: str, profile: ProfileConfig) -> str:
         blocks = _parse_blocks(text)
         payload_blocks: list[dict[str, Any]] = []
@@ -232,7 +238,7 @@ class JSONAdapter(BaseFormatAdapter):
         total_chunks = len(
             [item for item in payload_blocks if item["type"] in {"chunk", "summary", "example"}]
         )
-        reading_time_seconds = int((adapted_word_count / 180.0) * 60)
+        reading_time_seconds = int((adapted_word_count / self.READING_WPM) * 60)
         profile_name = _detect_profile_name(profile)
         payload = {
             "profile": profile_name.value,
@@ -240,15 +246,8 @@ class JSONAdapter(BaseFormatAdapter):
             "metadata": {
                 "total_chunks": total_chunks,
                 "reading_time_seconds": max(1, reading_time_seconds),
-                "transforms_applied": [
-                    "chunker",
-                    "sentence_simplifier",
-                    "tone_rewriter",
-                    "number_contextualiser",
-                    "priority_reorderer",
-                ],
-                "original_word_count": adapted_word_count,
-                "adapted_word_count": adapted_word_count,
+                "reading_wpm": self.READING_WPM,
+                "word_count": adapted_word_count,
             },
         }
         return json.dumps(payload, ensure_ascii=True)
@@ -260,7 +259,8 @@ class JSONAdapter(BaseFormatAdapter):
             return "heading"
         if block_type == "code":
             return "code"
-        if lowered.startswith(("summary:", "bottom line")):
+        # PriorityReorderer emits the bottom line wrapped in bold markers.
+        if lowered.startswith(("summary:", "bottom line", "**bottom line")):
             return "summary"
         if lowered.startswith("example:"):
             return "example"

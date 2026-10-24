@@ -107,7 +107,11 @@ def test_json_adapter_returns_expected_schema() -> None:
     assert isinstance(payload["blocks"], list)
     assert "metadata" in payload
     assert "total_chunks" in payload["metadata"]
-    assert "transforms_applied" in payload["metadata"]
+    # The adapter renders text; it does not know which transforms ran, so it
+    # must not fabricate a transforms_applied list (it previously hardcoded
+    # five module names regardless of what actually executed).
+    assert "transforms_applied" not in payload["metadata"]
+    assert payload["metadata"]["word_count"] >= 1
 
 
 def test_tts_adapter_expands_acronyms_and_numbers() -> None:
@@ -158,3 +162,49 @@ def test_markdown_adapter_no_fake_aria_label_in_alt() -> None:
     out = adapter.format(text, get_profile_config(Profile.ADHD))
     assert "aria-label" not in out
     assert "![Image description](diagram.png)" in out
+
+
+def test_json_adapter_classifies_bolded_bottom_line() -> None:
+    """Regression: PriorityReorderer emits '**Bottom line: ...**'; the JSON
+    block mapper only matched the unbolded prefix, so the summary block was
+    typed as a plain chunk."""
+    adapter = JSONAdapter()
+    profile = get_profile_config(Profile.ADHD)
+    text = "**Bottom line: Ship the fix today.**\n\nBackground: Context here."
+    out = adapter.format(text, profile)
+    payload = json.loads(out)
+    types = [block["type"] for block in payload["blocks"]]
+    assert "summary" in types
+
+
+def test_html_list_then_heading_keeps_sections_siblings() -> None:
+    """Regression: a heading directly after a list closed only </ul>, leaving
+    the <section> around the list open, so the heading and all following
+    sections nested inside the list section."""
+    adapter = HTMLAdapter()
+    profile = get_profile_config(Profile.DYSLEXIA)
+    text = "- first item\n- second item\n\n# Next Topic\n\nParagraph."
+    out = adapter.format(text, profile)
+
+    from html.parser import HTMLParser
+
+    class _NestingChecker(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__()
+            self.stack: list[str] = []
+            self.problems: list[str] = []
+
+        def handle_starttag(self, tag, attrs):
+            if tag not in {"br", "img", "hr"}:
+                self.stack.append(tag)
+
+        def handle_endtag(self, tag):
+            if not self.stack or self.stack[-1] != tag:
+                self.problems.append(f"mismatched </{tag}>")
+            else:
+                self.stack.pop()
+
+    checker = _NestingChecker()
+    checker.feed(out)
+    assert checker.problems == []
+    assert checker.stack == []
