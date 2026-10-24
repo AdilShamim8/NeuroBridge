@@ -117,12 +117,31 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Sliding-window rate limiter keyed by client IP and API-key digest.
+
+    Bookkeeping is per process (so N uvicorn workers each apply their own
+    window) and holds at most MAX_TRACKED_IDENTITIES entries per table: stale
+    identity queues are evicted on access, and the tables are pruned when they
+    grow past the cap so a scan of unique source IPs cannot grow memory
+    without bound.
+    """
+
+    MAX_TRACKED_IDENTITIES = 10_000
+
     def __init__(self, app, per_ip_per_minute: int = 60, per_key_per_minute: int = 120) -> None:  # type: ignore[no-untyped-def]
         super().__init__(app)
         self.per_ip_per_minute = max(1, per_ip_per_minute)
         self.per_key_per_minute = max(1, per_key_per_minute)
         self._ip_requests: defaultdict[str, deque[datetime]] = defaultdict(deque)
         self._key_requests: defaultdict[str, deque[datetime]] = defaultdict(deque)
+
+    def _prune_stale(self, table: defaultdict[str, deque[datetime]], window_start: datetime) -> None:
+        """Drop identities whose queues are entirely outside the window."""
+        if len(table) <= self.MAX_TRACKED_IDENTITIES:
+            return
+        stale = [identity for identity, queue in table.items() if not queue or queue[-1] < window_start]
+        for identity in stale:
+            del table[identity]
 
     async def dispatch(self, request: Request, call_next):  # type: ignore[override]
         ip = request.client.host if request.client else "unknown"
@@ -133,6 +152,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         while ip_queue and ip_queue[0] < window_start:
             ip_queue.popleft()
         if len(ip_queue) >= self.per_ip_per_minute:
+            self._prune_stale(self._ip_requests, window_start)
             return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"})
         ip_queue.append(now)
 
@@ -142,6 +162,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             while key_queue and key_queue[0] < window_start:
                 key_queue.popleft()
             if len(key_queue) >= self.per_key_per_minute:
+                self._prune_stale(self._key_requests, window_start)
                 return JSONResponse(
                     status_code=429, content={"detail": "Rate limit exceeded for API key"}
                 )

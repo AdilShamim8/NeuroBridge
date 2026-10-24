@@ -405,6 +405,7 @@ def test_chunked_body_size_limit_is_enforced() -> None:
             allowed_origins=["*"], rate_limit_per_minute=1000, max_request_size_bytes=64
         ),
     )
+
     async def run() -> int:
         import json as _json
 
@@ -426,3 +427,22 @@ def test_chunked_body_size_limit_is_enforced() -> None:
             return response.status_code
 
     assert asyncio.run(run()) == 413
+
+
+def test_rate_limiter_evicts_stale_identities() -> None:
+    """The limiter's identity tables must stay bounded: every unique client IP
+    kept a deque forever, so a scan of spoofed source addresses grew memory
+    without bound."""
+    from datetime import datetime, timedelta, timezone
+
+    from neurobridge.server.middleware import RateLimitMiddleware
+
+    limiter = RateLimitMiddleware(app=None, per_ip_per_minute=5, per_key_per_minute=5)
+    now = datetime.now(timezone.utc)
+    # Simulate many identities whose only traffic is far outside the window.
+    for index in range(limiter.MAX_TRACKED_IDENTITIES + 50):
+        identity = f"10.0.{index // 256}.{index % 256}"
+        limiter._ip_requests[identity].append(now - timedelta(minutes=10))
+
+    limiter._prune_stale(limiter._ip_requests, now - timedelta(minutes=1))
+    assert len(limiter._ip_requests) <= limiter.MAX_TRACKED_IDENTITIES
