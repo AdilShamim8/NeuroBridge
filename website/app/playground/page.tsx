@@ -476,7 +476,8 @@ export default function PlaygroundPage() {
           </div>
         </Card>
 
-        <Card ref={outputRef as never} className="space-y-4">
+        <div ref={outputRef} className="space-y-4">
+          <Card className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="inline-flex rounded-xl border border-black/10 bg-white p-1">
               {([
@@ -602,7 +603,8 @@ export default function PlaygroundPage() {
             </div>
             {profile === "anxiety" ? <InlineHelpful page="playground" profile={profile} /> : null}
           </div>
-        </Card>
+          </Card>
+        </div>
       </div>
 
       <section className="space-y-3 rounded-2xl border border-black/10 bg-white/80 p-6">

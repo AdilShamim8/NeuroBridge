@@ -40,3 +40,10 @@ Desktop.ini
 .idea/
 *.swp
 *.swo
+
+website/.next/
+website/node_modules/
+website/next-env.d.ts
+website/tsconfig.tsbuildinfo
+coverage.xml
+*.db

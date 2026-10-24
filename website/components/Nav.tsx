@@ -1,13 +1,14 @@
 "use client";
 
 import { BrainCircuit, Github, Menu, X } from "lucide-react";
+import type { Route } from "next";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { trackEvent } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
-const links = [
+const links: { href: Route; label: string }[] = [
   { href: "/playground", label: "Playground" },
   { href: "/quiz", label: "Quiz" },
   { href: "/stats", label: "Stats" },
