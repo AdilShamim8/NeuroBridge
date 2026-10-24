@@ -3,6 +3,7 @@ import {
   Chunker,
   NumberContextualiser,
   PriorityReorderer,
+  SentenceSimplifier,
   ToneRewriter
 } from "./transform";
 import { AdaptedResponse, NeuroBridgeConfig, Profile, ProfileConfig, TransformModule } from "./types";
@@ -21,8 +22,10 @@ export class NeuroBridge {
       memoryBackend: config.memoryBackend ?? "none"
     };
 
+    // Module order mirrors the Python pipeline.
     this.modules = [
       new Chunker(),
+      new SentenceSimplifier(),
       new ToneRewriter(),
       new NumberContextualiser(),
       new PriorityReorderer()
@@ -41,6 +44,19 @@ export class NeuroBridge {
 
   public adaptSync(text: string): AdaptedResponse {
     const start = Date.now();
+
+    // Blank input is passed through untouched, mirroring the Python
+    // pipeline's adapt() behavior.
+    if (!text.trim()) {
+      return {
+        adaptedText: text,
+        originalText: text,
+        profileUsed: this.profileId,
+        transformsApplied: [],
+        processingTimeMs: Date.now() - start
+      };
+    }
+
     let output = text;
     const transformsApplied: string[] = [];
 
