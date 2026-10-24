@@ -28,3 +28,28 @@ export const IDIOM_MAP: Record<string, string> = {
   "let the cat out of the bag": "reveal a secret",
   "elephant in the room": "obvious issue being ignored"
 };
+
+/**
+ * Word-specific anxiety softening, mirroring the Python pipeline's
+ * _ANXIETY_REPLACEMENTS and _CATASTROPHIC_REPLACEMENTS. Each urgency term
+ * maps to a calm replacement that keeps the sentence grammatical - a single
+ * blanket replacement ("must" -> "important") produced output like
+ * "You important complete this".
+ */
+export const ANXIETY_REPLACEMENTS: Record<string, string> = {
+  asap: "when you have time",
+  immediately: "when ready",
+  critical: "important",
+  urgent: "worth noting",
+  must: "consider",
+  deadline: "target date",
+  failure: "setback",
+  problem: "situation",
+  error: "issue to address"
+};
+
+export const CATASTROPHIC_REPLACEMENTS: Record<string, string> = {
+  "this will break": "this might need attention",
+  "you must fix": "it is worth looking at",
+  "this is wrong": "this could be improved"
+};

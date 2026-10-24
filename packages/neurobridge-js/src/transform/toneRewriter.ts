@@ -1,5 +1,5 @@
 import { Profile, ProfileConfig, TransformModule } from "../types";
-import { IDIOM_MAP, URGENCY_WORDS } from "./urgency";
+import { ANXIETY_REPLACEMENTS, CATASTROPHIC_REPLACEMENTS, IDIOM_MAP } from "./urgency";
 
 function replaceAllCaseInsensitive(text: string, source: string, target: string): string {
   const escaped = source.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -20,8 +20,11 @@ export class ToneRewriter implements TransformModule {
     }
 
     if (profileId === Profile.ANXIETY) {
-      URGENCY_WORDS.forEach((word) => {
-        output = replaceAllCaseInsensitive(output, word, "important");
+      Object.entries(CATASTROPHIC_REPLACEMENTS).forEach(([source, target]) => {
+        output = replaceAllCaseInsensitive(output, source, target);
+      });
+      Object.entries(ANXIETY_REPLACEMENTS).forEach(([source, target]) => {
+        output = replaceAllCaseInsensitive(output, source, target);
       });
     }
 
