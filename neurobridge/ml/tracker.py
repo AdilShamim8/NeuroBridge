@@ -102,5 +102,5 @@ class InteractionTracker:
         data = getattr(store, "_interaction_cache", None)
         if not isinstance(data, dict):
             data = {}
-            store._interaction_cache = data
+            setattr(store, "_interaction_cache", data)
         data[key] = list(events)
