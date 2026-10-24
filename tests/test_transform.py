@@ -218,3 +218,20 @@ def test_number_contextualiser_small_percentages_are_mathematically_true() -> No
 
     adapted2 = bridge.adapt("About 0.7% of users are affected.")
     assert "0 in every 1" not in adapted2
+
+
+def test_pipeline_does_not_warn_on_expected_no_ops() -> None:
+    """Regression: every transform emitted up to five UserWarnings because
+    profile-specific modules report no-ops for all other profiles. Library
+    users saw warning spam on stderr for each adapt() call."""
+    import warnings as _warnings
+
+    bridge = NeuroBridge(config=Config(memory_backend="none"))
+    bridge.set_profile(Profile.ADHD)
+    with _warnings.catch_warnings(record=True) as caught:
+        _warnings.simplefilter("always")
+        bridge.adapt("A plain sentence. Another one follows it. A third sentence here.")
+    noop_warnings = [
+        w for w in caught if "produced no changes" in str(w.message)
+    ]
+    assert noop_warnings == []

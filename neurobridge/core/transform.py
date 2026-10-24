@@ -901,7 +901,9 @@ class TransformPipeline:
                 output = module.apply(output, self.profile)
                 duration_ms = (perf_counter() - start) * 1000
                 changed = output != before
-                if not changed:
+                if not changed and self.debug:
+                    # Most modules only act for one profile, so no-ops are the
+                    # common case; warn only when the operator asked for detail.
                     warnings.warn(
                         f"Transform module '{module.name}' produced no changes.",
                         UserWarning,
