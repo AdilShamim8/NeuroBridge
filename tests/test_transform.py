@@ -25,7 +25,9 @@ def test_anxiety_pipeline_softens_urgency_end_to_end() -> None:
     "must" survived the full anxiety pipeline untouched."""
     bridge = NeuroBridge(config=Config(memory_backend="none"))
     bridge.set_profile(Profile.ANXIETY)
-    adapted = bridge.adapt("You must fix this NOW! It is urgent and critical to submit immediately.")
+    adapted = bridge.adapt(
+        "You must fix this NOW! It is urgent and critical to submit immediately."
+    )
 
     assert "NOW!" not in adapted
     assert "must fix" not in adapted.lower()
@@ -147,3 +149,27 @@ def test_pipeline_tracks_execution_timing() -> None:
     assert out
     assert len(pipeline.last_run) == 6
     assert all(run.duration_ms >= 0 for run in pipeline.last_run)
+
+
+def test_tone_rewriter_preserves_paragraph_breaks() -> None:
+    """Regression: _strip_fillers collapsed paragraph breaks to single spaces
+    for every profile, flattening multi-paragraph documents into one slab."""
+    bridge = NeuroBridge(config=Config(memory_backend="none"))
+    bridge.set_profile(Profile.ADHD)
+    adapted = bridge.adapt("Para one here.\n\nPara two here.\n\nPara three here.")
+
+    assert adapted.count("\n\n") >= 2
+    assert "Para one here." in adapted
+    assert "Para three here." in adapted
+
+
+def test_urgency_filter_preserves_paragraph_breaks() -> None:
+    """Regression: urgency_filter joined all sentences of a region with single
+    spaces, destroying the paragraph/chunk structure produced by the chunker."""
+    bridge = NeuroBridge(config=Config(memory_backend="none"))
+    bridge.set_profile(Profile.ANXIETY)
+    adapted = bridge.adapt(
+        "The service is now available.\n\nPlease review the notes.\n\nThanks for reading."
+    )
+
+    assert adapted.count("\n\n") >= 2

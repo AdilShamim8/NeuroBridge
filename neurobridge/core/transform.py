@@ -307,15 +307,24 @@ class Chunker(BaseTransformModule):
                 output_regions.append(region)
                 continue
 
-            sentences = _safe_sent_tokenize(region)
-            if not sentences:
+            if not region.strip():
                 output_regions.append(region)
                 continue
 
-            chunks = _chunk_sentences(sentences, chunk_size)
-            if detected == Profile.ADHD:
-                chunks = [_bold_anchor_words(chunk) for chunk in chunks]
-            output_regions.append(separator.join(chunks))
+            # Chunk within each paragraph and never merge sentences across a
+            # paragraph boundary: paragraph breaks are document structure and
+            # double as chunk boundaries in the output.
+            chunked_paragraphs: list[str] = []
+            for paragraph in region.split("\n\n"):
+                sentences = _safe_sent_tokenize(paragraph)
+                if not sentences:
+                    chunked_paragraphs.append(paragraph)
+                    continue
+                chunks = _chunk_sentences(sentences, chunk_size)
+                if detected == Profile.ADHD:
+                    chunks = [_bold_anchor_words(chunk) for chunk in chunks]
+                chunked_paragraphs.append(separator.join(chunks))
+            output_regions.append(separator.join(chunked_paragraphs))
 
         return "".join(output_regions).strip()
 
@@ -335,15 +344,23 @@ class SentenceSimplifier(BaseTransformModule):
                 transformed_regions.append(region)
                 continue
 
-            sentences = _safe_sent_tokenize(region)
-            if not sentences:
+            if not region.strip():
                 transformed_regions.append(region)
                 continue
 
-            rebuilt: list[str] = []
-            for sentence in sentences:
-                rebuilt.extend(self._simplify_sentence(sentence, profile.max_sentence_words))
-            transformed_regions.append(" ".join(part for part in rebuilt if part))
+            # Simplify within each paragraph; never merge sentences across a
+            # paragraph boundary.
+            rebuilt_paragraphs: list[str] = []
+            for paragraph in region.split("\n\n"):
+                sentences = _safe_sent_tokenize(paragraph)
+                if not sentences:
+                    rebuilt_paragraphs.append(paragraph)
+                    continue
+                rebuilt: list[str] = []
+                for sentence in sentences:
+                    rebuilt.extend(self._simplify_sentence(sentence, profile.max_sentence_words))
+                rebuilt_paragraphs.append(" ".join(part for part in rebuilt if part))
+            transformed_regions.append("\n\n".join(rebuilt_paragraphs))
 
         return "".join(transformed_regions).strip()
 
@@ -451,7 +468,9 @@ class ToneRewriter(BaseTransformModule):
         updated = text
         for pattern, replacement in _FILLER_REPLACEMENTS.items():
             updated = pattern.sub(replacement, updated)
-        return re.sub(r"\s{2,}", " ", updated)
+        # Collapse horizontal whitespace only: paragraph breaks are document
+        # structure and must survive the pipeline.
+        return re.sub(r"[^\S\n]+", " ", updated)
 
     def _rewrite_anxiety(self, text: str) -> str:
         updated = text
@@ -505,13 +524,22 @@ class UrgencyFilter(BaseTransformModule):
                 transformed_regions.append(region)
                 continue
 
-            sentences = _safe_sent_tokenize(region)
-            if not sentences:
+            if not region.strip():
                 transformed_regions.append(region)
                 continue
 
-            rewritten = [self._rewrite_sentence(sentence) for sentence in sentences]
-            transformed_regions.append(" ".join(rewritten))
+            # Process each paragraph separately and keep the paragraph breaks:
+            # collapsing them would flatten the chunker's output structure.
+            paragraphs = region.split("\n\n")
+            rewritten_paragraphs: list[str] = []
+            for paragraph in paragraphs:
+                paragraph_sentences = _safe_sent_tokenize(paragraph)
+                if not paragraph_sentences:
+                    rewritten_paragraphs.append(paragraph)
+                    continue
+                rewritten = [self._rewrite_sentence(sentence) for sentence in paragraph_sentences]
+                rewritten_paragraphs.append(" ".join(rewritten))
+            transformed_regions.append("\n\n".join(rewritten_paragraphs))
 
         return "".join(transformed_regions).strip()
 
