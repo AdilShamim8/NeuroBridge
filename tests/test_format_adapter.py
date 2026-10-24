@@ -45,15 +45,44 @@ def test_html_adapter_contains_semantic_and_aria_labels() -> None:
     assert "nb-progress" in out
 
 
-def test_html_output_is_valid_parseable() -> None:
+def test_html_output_tags_balance_and_nest_correctly() -> None:
+    """Previously 'parseable' was asserted via HTMLParser.error, a hook that
+    CPython never calls, so the check passed vacuously. Parse the document and
+    verify that every opened container tag closes in the right order."""
     adapter = HTMLAdapter()
     profile = get_profile_config(Profile.DYSLEXIA)
-    text = "# A heading\n\n- one\n- two\n\nParagraph"
+    text = "# A heading\n\n- one\n- two\n\nParagraph text follows."
     out = adapter.format(text, profile)
 
-    parser = _HTMLValidator()
-    parser.feed(out)
-    assert not parser.errors
+    from html.parser import HTMLParser
+
+    class _BalanceChecker(HTMLParser):
+        VOID = {"br", "img", "hr", "meta", "link", "input"}
+
+        def __init__(self) -> None:
+            super().__init__()
+            self.stack: list[str] = []
+            self.problems: list[str] = []
+
+        def handle_starttag(self, tag, attrs):
+            if tag not in self.VOID:
+                self.stack.append(tag)
+
+        def handle_endtag(self, tag):
+            if tag in self.VOID:
+                return
+            if not self.stack:
+                self.problems.append(f"closing </{tag}> with empty stack")
+                return
+            if self.stack[-1] != tag:
+                self.problems.append(f"</{tag}> closes <{self.stack[-1]}>")
+            self.stack.pop()
+
+    checker = _BalanceChecker()
+    checker.feed(out)
+    assert not checker.problems
+    # Everything opened must be closed by the end of the document.
+    assert checker.stack == []
 
 
 def test_plain_text_adapter_strips_markdown_and_formats_bullets() -> None:

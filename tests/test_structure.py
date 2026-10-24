@@ -60,7 +60,9 @@ def test_priority_reorderer_single_paragraph_text() -> None:
     module = PriorityReorderer()
     text = "The worker processes data in batches and records summary metrics."
     out = module.apply(text, profile)
-    assert "Bottom line" in out or "Summary:" in out
+    # Single paragraph with no conclusion hint: the reorderer's documented
+    # behavior is the Bottom line extraction.
+    assert "Bottom line" in out
 
 
 def test_day4_pipeline_end_to_end_adhd_structure() -> None:

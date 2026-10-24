@@ -20,7 +20,16 @@ def test_detector_returns_reasoning_for_minimal_events() -> None:
     ]
     result = detector.detect(events)
     assert isinstance(result.profile, str)
+    # The reasoning must name which path executed; the OR-assert previously
+    # passed whichever branch fired (or neither, since the string check had no
+    # else-clause), so add the no-events contract explicitly.
+    assert result.reasoning.strip()
     assert "Top probabilities" in result.reasoning or "Falling back to quiz" in result.reasoning
+
+    empty = ProfileDetector().detect([])
+    assert empty.fallback_to_quiz is True
+    assert empty.profile == Profile.ADHD
+    assert empty.confidence == 0.0
 
 
 def test_detector_falls_back_when_model_is_unavailable(monkeypatch) -> None:

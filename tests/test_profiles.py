@@ -66,7 +66,11 @@ def test_number_contextualiser_never_removes_numbers(values: list[int]) -> None:
         max_size=50,
     ).map(" ".join)
 )
-def test_adapted_output_growth_under_40_percent(text: str) -> None:
+def test_adapted_output_growth_bounded(text: str) -> None:
+    """The old name promised growth under 40 percent while the assertion
+    allowed up to 100% plus 40 characters. Assert what the pipeline can
+    actually guarantee: bounded growth driven by bold markers, chunk
+    separators, and labels."""
     bridge = NeuroBridge()
     bridge.set_profile(Profile.ADHD)
     out = bridge.adapt(text)

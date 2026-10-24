@@ -41,7 +41,8 @@ def test_urgency_filter_high_medium_low_scoring_paths() -> None:
     low_out = module.apply(low, profile)
 
     assert "asap" not in high_out.lower()
-    assert "a calm note:" in medium_out.lower() or "soon" not in medium_out.lower()
+    # Medium-urgency sentences must be visibly softened, not just possibly.
+    assert "a calm note:" in medium_out.lower()
     assert low_out == low
 
 

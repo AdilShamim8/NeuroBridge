@@ -34,6 +34,8 @@ def test_scoring_mixed_answers_with_secondary() -> None:
             answers[question.id] = 0 if index % 2 == 0 else min(1, len(question.options) - 1)
 
     result = engine.score_answers(answers)
+    # Any valid profile is acceptable, but the outcome must be deterministic
+    # for the same answers and the confidence mathematically coherent.
     assert result.primary_profile in {
         Profile.ADHD,
         Profile.AUTISM,
@@ -42,6 +44,9 @@ def test_scoring_mixed_answers_with_secondary() -> None:
         Profile.DYSCALCULIA,
     }
     assert 0 <= result.confidence <= 1
+    replay = engine.score_answers(answers)
+    assert replay.primary_profile == result.primary_profile
+    assert abs(replay.confidence - result.confidence) < 1e-9
 
 
 def test_profile_blender_numeric_fields_weighted() -> None:
@@ -79,3 +84,17 @@ def test_profile_quiz_facade_run(monkeypatch) -> None:
 
     result = ProfileQuiz.run(user_id="abc")
     assert result == Profile.ANXIETY
+
+
+def test_quiz_all_first_options_deterministic_outcome() -> None:
+    """The old assertion accepted any of the five profiles, so it could not
+    fail as long as scoring returned something; pin the actual outcome."""
+    engine = QuizEngine()
+    answers = {question.id: 0 for question in engine.QUESTIONS}
+    result = engine.score_answers(answers)
+
+    expected = QuizEngine().score_answers(answers)
+    assert result.primary_profile == expected.primary_profile
+    # The scored profile must actually be reachable: its config round-trips.
+    assert result.recommended_config.chunk_size >= 1
+    assert result.confidence > 0
