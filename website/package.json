@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@next/mdx": "^14.2.21",
-    "@vercel/og": "^0.6.2",
+    "@vercel/og": "^1.0.3",
     "clsx": "^2.1.1",
     "flexsearch": "^0.8.205",
     "framer-motion": "^11.5.4",
