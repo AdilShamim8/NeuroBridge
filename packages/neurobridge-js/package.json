@@ -24,7 +24,9 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rollup -c",
+    "build": "npm run build:js && npm run build:types",
+    "build:js": "rollup -c",
+    "build:types": "tsc --project tsconfig.types.json",
     "typecheck": "tsc --noEmit",
     "clean": "rimraf dist",
     "test": "vitest run"
