@@ -41,7 +41,7 @@ neurobridge = "neurobridge.cli:main"
 openai = ["openai>=1.0.0"]
 anthropic = ["anthropic>=0.18.0"]
 langchain = ["langchain>=0.3.28"]
-redis = ["redis>=5.0.0"]
+redis = ["redis>=8.1.0"]
 server = [
   "fastapi>=0.100.0,<1.0.0",
   "uvicorn>=0.54.0,<1.0.0",
