@@ -484,5 +484,4 @@ Built on the shoulders of giants: the teams behind PyTorch, Hugging Face Transfo
 It's the single most powerful thing you can do to help this project reach the people who need it.
 
 Made with care · MIT Licensed · [neurobridge.dev](https://neurobridge.dev)
-
 </div>
