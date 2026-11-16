@@ -51,7 +51,7 @@ ml = [
   "joblib>=1.6.0,<2.0.0",
 ]
 docs = [
-  "mkdocs>=1.6.0",
+  "mkdocs>=1.6.1",
   "mkdocs-material>=9.7.6",
   "mkdocstrings[python]>=1.0.6",
 ]
