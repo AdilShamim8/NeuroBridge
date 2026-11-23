@@ -33,8 +33,8 @@
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.6.2",
     "next-sitemap": "^4.2.3",
-    "playwright": "^1.65.0",
-    "postcss": "^8.5.32",
+    "playwright": "^1.65.1",
+    "postcss": "^8.5.33",
     "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2"
   }
