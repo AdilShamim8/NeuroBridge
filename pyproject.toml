@@ -24,7 +24,7 @@ classifiers = [
 ]
 dependencies = [
   "openai>=1.0.0,<3.0.0",
-  "anthropic>=0.18.0,<1.0.0",
+  "anthropic>=2.11.0,<3.0.0",
   "pydantic>=2.0.0,<3.0.0",
   "langchain>=0.3.28,<0.4.0",
   "nltk>=3.8,<4.0",
@@ -39,7 +39,7 @@ neurobridge = "neurobridge.cli:main"
 
 [project.optional-dependencies]
 openai = ["openai>=1.0.0"]
-anthropic = ["anthropic>=0.18.0"]
+anthropic = ["anthropic>=2.11.0"]
 langchain = ["langchain>=0.3.28"]
 redis = ["redis>=8.1.0"]
 server = [
